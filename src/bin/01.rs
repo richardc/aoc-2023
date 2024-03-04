@@ -1,8 +1,7 @@
 advent_of_code::solution!(1);
 
-pub fn extract_digits(line: &str) -> (u8, u8) {
-    let digits: Vec<_> = line
-        .as_bytes()
+pub fn extract_digits(line: &str) -> Vec<u8> {
+    line.as_bytes()
         .iter()
         .filter_map(|b| {
             if b.is_ascii_digit() {
@@ -11,8 +10,7 @@ pub fn extract_digits(line: &str) -> (u8, u8) {
                 None
             }
         })
-        .collect();
-    (*digits.first().unwrap(), *digits.last().unwrap())
+        .collect()
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
@@ -20,14 +18,16 @@ pub fn part_one(input: &str) -> Option<u32> {
         input
             .lines()
             .map(|line| {
-                let (first, last) = extract_digits(line);
+                let digits = extract_digits(line);
+                let first = digits.first().unwrap();
+                let last = digits.last().unwrap();
                 u32::from(first * 10 + last)
             })
             .sum(),
     )
 }
 
-pub fn extract_word_digits(line: &str) -> (u8, u8) {
+pub fn extract_word_digits(line: &str) -> Vec<u8> {
     let mut digits: Vec<u8> = vec![];
     let mut b = line.as_bytes();
     while b.len() > 0 {
@@ -75,7 +75,7 @@ pub fn extract_word_digits(line: &str) -> (u8, u8) {
         b = &b[skip..];
     }
 
-    (*digits.first().unwrap(), *digits.last().unwrap())
+    digits
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
@@ -83,7 +83,9 @@ pub fn part_two(input: &str) -> Option<u32> {
         input
             .lines()
             .map(|line| {
-                let (first, last) = extract_word_digits(line);
+                let digits = extract_word_digits(line);
+                let first = digits.first().unwrap();
+                let last = digits.last().unwrap();
                 u32::from(first * 10 + last)
             })
             .sum(),
