@@ -31,48 +31,38 @@ pub fn extract_word_digits(line: &str) -> Vec<u8> {
     let mut digits: Vec<u8> = vec![];
     let mut b = line.as_bytes();
     while !b.is_empty() {
-        let mut skip = 1;
         match b {
             b if b.starts_with(b"one") => {
-                skip = 3;
                 digits.push(1);
             }
             b if b.starts_with(b"two") => {
-                skip = 3;
                 digits.push(2);
             }
             b if b.starts_with(b"three") => {
-                skip = 5;
                 digits.push(3);
             }
             b if b.starts_with(b"four") => {
-                skip = 4;
                 digits.push(4);
             }
             b if b.starts_with(b"five") => {
-                skip = 4;
                 digits.push(5);
             }
             b if b.starts_with(b"six") => {
-                skip = 3;
                 digits.push(6);
             }
             b if b.starts_with(b"seven") => {
-                skip = 5;
                 digits.push(7);
             }
             b if b.starts_with(b"eight") => {
-                skip = 5;
                 digits.push(8);
             }
             b if b.starts_with(b"nine") => {
-                skip = 4;
                 digits.push(9);
             }
             b if b[0].is_ascii_digit() => digits.push(b[0] - b'0'),
             _ => {}
         }
-        b = &b[skip..];
+        b = &b[1..];
     }
 
     digits
@@ -108,5 +98,11 @@ mod tests {
             "examples", DAY, 2,
         ));
         assert_eq!(result, Some(281));
+    }
+
+    #[test]
+    fn test_extract_word_digits() {
+        let result = extract_word_digits("oneight");
+        assert_eq!(result, vec![1, 8]);
     }
 }
