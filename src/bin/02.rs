@@ -61,7 +61,7 @@ impl FromStr for Game {
 }
 
 impl Game {
-    fn is_legal(self: &Self, red: u32, green: u32, blue: u32) -> bool {
+    fn is_legal(&self, red: u32, green: u32, blue: u32) -> bool {
         self.rounds
             .iter()
             .all(|r| r.red <= red && r.green <= green && r.blue <= blue)
@@ -85,7 +85,7 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 impl Game {
-    fn power(self: &Self) -> u32 {
+    fn power(&self) -> u32 {
         let r = self.rounds.iter().map(|r| r.red).max().unwrap();
         let g = self.rounds.iter().map(|r| r.green).max().unwrap();
         let b = self.rounds.iter().map(|r| r.blue).max().unwrap();
