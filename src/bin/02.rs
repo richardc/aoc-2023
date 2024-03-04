@@ -84,8 +84,18 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(legal.sum())
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+impl Game {
+    fn power(self: &Self) -> u32 {
+        let r = self.rounds.iter().map(|r| r.red).max().unwrap();
+        let g = self.rounds.iter().map(|r| r.green).max().unwrap();
+        let b = self.rounds.iter().map(|r| r.blue).max().unwrap();
+        r * g * b
+    }
+}
+
+pub fn part_two(input: &str) -> Option<u32> {
+    let games = parse(input);
+    Some(games.iter().map(|g| g.power()).sum())
 }
 
 #[cfg(test)]
@@ -101,6 +111,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(2286));
     }
 }
