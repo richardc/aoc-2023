@@ -30,7 +30,7 @@ pub fn part_one(input: &str) -> Option<u32> {
 pub fn extract_word_digits(line: &str) -> Vec<u8> {
     let mut digits: Vec<u8> = vec![];
     let mut b = line.as_bytes();
-    while b.len() > 0 {
+    while !b.is_empty() {
         let mut skip = 1;
         match b {
             b if b.starts_with(b"one") => {
