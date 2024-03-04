@@ -1,70 +1,56 @@
-use std::str::FromStr;
+use std::{cmp::max, str::FromStr};
 
 use anyhow::bail;
 
 advent_of_code::solution!(2);
 
-struct Round {
+struct Game {
+    id: u32,
     red: u32,
     green: u32,
     blue: u32,
-}
-
-impl FromStr for Round {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut r = Round {
-            red: 0,
-            green: 0,
-            blue: 0,
-        };
-
-        for die in s.trim().split(',') {
-            if let Some((count, color)) = die.trim().split_once(' ') {
-                match color {
-                    "red" => r.red = count.parse().unwrap(),
-                    "green" => r.green = count.parse().unwrap(),
-                    "blue" => r.blue = count.parse().unwrap(),
-                    _ => {}
-                }
-            } else {
-                bail!("parsing die {}", die)
-            }
-        }
-        Ok(r)
-    }
-}
-
-struct Game {
-    id: u32,
-    rounds: Vec<Round>,
 }
 
 impl FromStr for Game {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if let Some((game, parts)) = s.split_once(':') {
-            if let Some((_, id)) = game.split_once(' ') {
-                Ok(Game {
-                    id: id.parse().unwrap(),
-                    rounds: parts.split(';').map(|r| r.parse().unwrap()).collect(),
-                })
-            } else {
-                bail!("Bad format")
+        let mut game = Game {
+            id: 0,
+            red: 0,
+            green: 0,
+            blue: 0,
+        };
+
+        if let Some((name, parts)) = s.split_once(':') {
+            if let Some((_, id)) = name.split_once(' ') {
+                game.id = id.parse().unwrap();
+
+                for round in parts.trim().split(';') {
+                    for die in round.trim().split(',') {
+                        if let Some((count, color)) = die.trim().split_once(' ') {
+                            let value = count.parse().unwrap();
+                            match color {
+                                "red" => game.red = max(game.red, value),
+                                "green" => game.green = max(game.green, value),
+                                "blue" => game.blue = max(game.blue, value),
+                                _ => {}
+                            }
+                        } else {
+                            bail!("die")
+                        }
+                    }
+                }
+                return Ok(game);
             }
-        } else {
-            bail!("Games")
         }
+        bail!("game parse")
     }
 }
 
 impl Game {
     fn is_legal(&self, red: u32, green: u32, blue: u32) -> bool {
-        self.rounds
-            .iter()
-            .all(|r| r.red <= red && r.green <= green && r.blue <= blue)
+        self.red <= red && self.green <= green && self.blue <= blue
     }
 }
 
@@ -86,10 +72,7 @@ pub fn part_one(input: &str) -> Option<u32> {
 
 impl Game {
     fn power(&self) -> u32 {
-        let r = self.rounds.iter().map(|r| r.red).max().unwrap();
-        let g = self.rounds.iter().map(|r| r.green).max().unwrap();
-        let b = self.rounds.iter().map(|r| r.blue).max().unwrap();
-        r * g * b
+        self.red * self.green * self.blue
     }
 }
 
