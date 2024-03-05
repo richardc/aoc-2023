@@ -28,8 +28,34 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(input.lines().map(score_card).sum())
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+fn card_wins(s: &str) -> usize {
+    let Some((_, card)) = s.split_once(':') else {
+        panic!("missing : in card");
+    };
+    let Some((winning, have)) = card.split_once('|') else {
+        panic!("missing | in card");
+    };
+    let check: HashSet<_> = winning.trim().split_ascii_whitespace().collect();
+
+    have.trim()
+        .split_ascii_whitespace()
+        .filter(|m| check.contains(m))
+        .count()
+}
+
+fn countup_cards(cards: Vec<&str>) -> u32 {
+    let mut counts: Vec<usize> = cards.iter().map(|_| 1).collect();
+    for (i, card) in cards.iter().enumerate() {
+        let wins = card_wins(card);
+        for j in 0..wins {
+            counts[i + j + 1] += counts[i];
+        }
+    }
+    counts.iter().sum::<usize>() as u32
+}
+
+pub fn part_two(input: &str) -> Option<u32> {
+    Some(countup_cards(input.lines().collect()))
 }
 
 #[cfg(test)]
@@ -51,6 +77,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(30));
     }
 }
