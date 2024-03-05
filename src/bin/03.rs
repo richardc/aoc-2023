@@ -48,7 +48,7 @@ struct Serial {
 impl Serial {
     fn is_used(&self, schematic: &Schematic) -> bool {
         for r in (self.row as i32 - 1)..=(self.row as i32 + 1) {
-            for c in (self.column as i32 - 1)..=(self.column as i32 + self.len as i32 + 1) {
+            for c in (self.column as i32 - 1)..=(self.column as i32 + self.len as i32) {
                 if let Cell::Symbol(_) = schematic.get_cell(r, c) {
                     return true;
                 }
