@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 advent_of_code::solution!(5);
 
+use itertools::Itertools;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
@@ -93,8 +94,24 @@ pub fn part_one(input: &str) -> Option<u64> {
     Some(almanac.lowest_location())
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+impl Almanac {
+    fn lowest_ranged_location(&self) -> u64 {
+        let mut mins = Vec::new();
+        for (&start, &count) in self.seeds.iter().tuples() {
+            mins.push(
+                (start..(start + count))
+                    .map(|seed| self.map(seed))
+                    .min()
+                    .unwrap(),
+            );
+        }
+        *mins.iter().min().unwrap()
+    }
+}
+
+pub fn part_two(input: &str) -> Option<u64> {
+    let almanac: Almanac = input.parse().unwrap();
+    Some(almanac.lowest_ranged_location())
 }
 
 #[cfg(test)]
@@ -121,6 +138,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(46));
     }
 }
