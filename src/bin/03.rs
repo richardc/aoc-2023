@@ -59,7 +59,7 @@ impl Serial {
 }
 
 impl Schematic {
-    fn find_numbers(&self) -> Vec<Serial> {
+    fn find_serials(&self) -> Vec<Serial> {
         let mut result = Vec::new();
         for r in 0..self.cells.len() {
             let mut c: usize = 0;
@@ -98,7 +98,7 @@ impl Schematic {
     }
 
     fn part_numbers(&self) -> u32 {
-        self.find_numbers()
+        self.find_serials()
             .iter()
             .filter_map(|serial| {
                 if serial.is_used(self) {
@@ -149,7 +149,7 @@ impl Schematic {
 
     fn gear_ratios(&self) -> u32 {
         let mut result = 0;
-        let serials = self.find_numbers();
+        let serials = self.find_serials();
         let gears = self.find_gears();
         for gear in gears {
             let touching = serials
@@ -183,7 +183,7 @@ mod tests {
     fn test_schematic_find_numbers() {
         let example = advent_of_code::template::read_file("examples", DAY);
         let schematic: Schematic = example.parse().unwrap();
-        let result = schematic.find_numbers();
+        let result = schematic.find_serials();
         assert_eq!(result.len(), 10);
         // println!("{:?}", result);
     }
