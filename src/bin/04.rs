@@ -25,7 +25,7 @@ fn score_card(s: &str) -> u32 {
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
-    Some(input.lines().map(|card| score_card(card)).sum())
+    Some(input.lines().map(score_card).sum())
 }
 
 pub fn part_two(_input: &str) -> Option<u32> {
