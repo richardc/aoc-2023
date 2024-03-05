@@ -64,10 +64,10 @@ impl Schematic {
         for r in 0..self.cells.len() {
             let mut c: usize = 0;
 
-            for (digit, cells) in &self.cells[r].iter().group_by(|a| match a {
-                Cell::Digit(_) => true,
-                _ => false,
-            }) {
+            for (digit, cells) in &self.cells[r]
+                .iter()
+                .group_by(|a| matches!(a, Cell::Digit(_)))
+            {
                 let found = cells.collect_vec();
                 if digit {
                     result.push(Serial {
