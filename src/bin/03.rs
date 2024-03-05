@@ -139,9 +139,8 @@ impl Schematic {
         let mut result = Vec::new();
         for r in 0..self.cells.len() {
             for c in 0..self.cells[r].len() {
-                match self.cells[r][c] {
-                    Cell::Symbol(b'*') => result.push(Gear { row: r, column: c }),
-                    _ => (),
+                if let Cell::Symbol(b'*') = self.cells[r][c] {
+                    result.push(Gear { row: r, column: c });
                 }
             }
         }
