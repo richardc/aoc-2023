@@ -116,8 +116,58 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(schematic.part_numbers())
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+impl Serial {
+    fn has_neighbour(&self, row: usize, col: usize) -> bool {
+        for r in (self.row as i32 - 1)..=(self.row as i32 + 1) {
+            for c in (self.column as i32 - 1)..=(self.column as i32 + self.len as i32) {
+                if r == row as i32 && c == col as i32 {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+}
+
+struct Gear {
+    row: usize,
+    column: usize,
+}
+
+impl Schematic {
+    fn find_gears(&self) -> Vec<Gear> {
+        let mut result = Vec::new();
+        for r in 0..self.cells.len() {
+            for c in 0..self.cells[r].len() {
+                match self.cells[r][c] {
+                    Cell::Symbol(b'*') => result.push(Gear { row: r, column: c }),
+                    _ => (),
+                }
+            }
+        }
+        result
+    }
+
+    fn gear_ratios(&self) -> u32 {
+        let mut result = 0;
+        let serials = self.find_numbers();
+        let gears = self.find_gears();
+        for gear in gears {
+            let touching = serials
+                .iter()
+                .filter(|s| s.has_neighbour(gear.row, gear.column))
+                .collect_vec();
+            if touching.len() == 2 {
+                result += touching[0].value * touching[1].value;
+            }
+        }
+        result
+    }
+}
+
+pub fn part_two(input: &str) -> Option<u32> {
+    let schematic: Schematic = input.parse().unwrap();
+    Some(schematic.gear_ratios())
 }
 
 #[cfg(test)]
@@ -174,6 +224,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(467_835));
     }
 }
