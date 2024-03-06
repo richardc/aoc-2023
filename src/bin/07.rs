@@ -64,7 +64,7 @@ impl PartialOrd for Hand {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         match self.kind.partial_cmp(&other.kind) {
             Some(Ordering::Equal) => self.cards.partial_cmp(&other.cards),
-            foo => foo,
+            kind => kind,
         }
     }
 }
