@@ -79,7 +79,7 @@ impl FromStr for Hand {
         }
         let counts: Vec<_> = histo.values().sorted().rev().collect();
         Ok(Hand {
-            cards: s.bytes().map(|b| Value::from(b)).collect(),
+            cards: s.bytes().map(Value::from).collect(),
             kind: match counts.as_slice() {
                 [5] => Kind::FiveOfAKind,
                 [4, 1] => Kind::FourOfAKind,
