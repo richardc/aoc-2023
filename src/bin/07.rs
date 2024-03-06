@@ -6,7 +6,7 @@ use itertools::Itertools;
 advent_of_code::solution!(7);
 
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
-enum Kind {
+enum Rank {
     FiveOfAKind = 10,
     FourOfAKind = 9,
     FullHouse = 8,
@@ -57,14 +57,14 @@ impl From<u8> for Value {
 #[derive(Debug, PartialEq)]
 struct Hand {
     cards: Vec<Value>,
-    kind: Kind,
+    rank: Rank,
 }
 
 impl PartialOrd for Hand {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        match self.kind.partial_cmp(&other.kind) {
+        match self.rank.partial_cmp(&other.rank) {
             Some(Ordering::Equal) => self.cards.partial_cmp(&other.cards),
-            kind => kind,
+            rank => rank,
         }
     }
 }
@@ -80,14 +80,14 @@ impl FromStr for Hand {
         let counts: Vec<_> = histo.values().sorted().rev().collect();
         Ok(Hand {
             cards: s.bytes().map(Value::from).collect(),
-            kind: match counts.as_slice() {
-                [5] => Kind::FiveOfAKind,
-                [4, 1] => Kind::FourOfAKind,
-                [3, 2] => Kind::FullHouse,
-                [3, 1, 1] => Kind::ThreeOfAKind,
-                [2, 2, 1] => Kind::TwoPair,
-                [2, 1, 1, 1] => Kind::OnePair,
-                _ => Kind::HighCard,
+            rank: match counts.as_slice() {
+                [5] => Rank::FiveOfAKind,
+                [4, 1] => Rank::FourOfAKind,
+                [3, 2] => Rank::FullHouse,
+                [3, 1, 1] => Rank::ThreeOfAKind,
+                [2, 2, 1] => Rank::TwoPair,
+                [2, 1, 1, 1] => Rank::OnePair,
+                _ => Rank::HighCard,
             },
         })
     }
@@ -151,21 +151,21 @@ mod tests {
             hand,
             Hand {
                 cards: vec![Value::Ace, Value::Ace, Value::Ace, Value::Ace, Value::Ace],
-                kind: Kind::FiveOfAKind
+                rank: Rank::FiveOfAKind
             }
         );
     }
 
-    #[test_case("AAAAA", Kind::FiveOfAKind)]
-    #[test_case("AA2AA", Kind::FourOfAKind)]
-    #[test_case("AA23A", Kind::ThreeOfAKind)]
-    #[test_case("AAA22", Kind::FullHouse)]
-    #[test_case("AA223", Kind::TwoPair)]
-    #[test_case("AA324", Kind::OnePair)]
-    #[test_case("23456", Kind::HighCard)]
-    fn test_hand_kind(hand: &str, kind: Kind) {
+    #[test_case("AAAAA", Rank::FiveOfAKind)]
+    #[test_case("AA2AA", Rank::FourOfAKind)]
+    #[test_case("AA23A", Rank::ThreeOfAKind)]
+    #[test_case("AAA22", Rank::FullHouse)]
+    #[test_case("AA223", Rank::TwoPair)]
+    #[test_case("AA324", Rank::OnePair)]
+    #[test_case("23456", Rank::HighCard)]
+    fn test_hand_kind(hand: &str, kind: Rank) {
         let result: Hand = hand.parse().unwrap();
-        assert_eq!(result.kind, kind);
+        assert_eq!(result.rank, kind);
     }
 
     #[test_case("AAAAA", "22222")]
