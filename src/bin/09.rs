@@ -28,8 +28,30 @@ pub fn part_one(input: &str) -> Option<i32> {
     Some(input.lines().map(next_number).sum())
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+fn prev_number(s: &str) -> i32 {
+    let values: Vec<i32> = s
+        .split_ascii_whitespace()
+        .map(|v| v.parse().unwrap())
+        .collect_vec();
+
+    fn inner(values: Vec<i32>) -> i32 {
+        let diff: Vec<i32> = values
+            .iter()
+            .tuple_windows()
+            .map(|(a, b)| b - a)
+            .collect_vec();
+
+        if diff.iter().all(|&v| v == 0) {
+            return values[0];
+        }
+        values[0] - inner(diff)
+    }
+
+    inner(values)
+}
+
+pub fn part_two(input: &str) -> Option<i32> {
+    Some(input.lines().map(prev_number).sum())
 }
 
 #[cfg(test)]
@@ -49,9 +71,14 @@ mod tests {
         assert_eq!(result, Some(114));
     }
 
+    #[test_case("0 3 6 9 12 15", -3)]
+    fn test_prev_number(s: &str, n: i32) {
+        check!(prev_number(s) == n);
+    }
+
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(2));
     }
 }
