@@ -7,30 +7,30 @@ advent_of_code::solution!(7);
 
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
 enum Rank {
-    FiveOfAKind = 10,
-    FourOfAKind = 9,
-    FullHouse = 8,
-    ThreeOfAKind = 7,
-    TwoPair = 6,
-    OnePair = 5,
-    HighCard = 4,
+    HighCard,
+    OnePair,
+    TwoPair,
+    ThreeOfAKind,
+    FullHouse,
+    FourOfAKind,
+    FiveOfAKind,
 }
 
 #[derive(Debug, PartialEq, PartialOrd)]
 enum Value {
-    Ace = 14,
-    King = 13,
-    Queen = 12,
-    Jack = 11,
-    Ten = 10,
-    Nine = 9,
-    Eight = 8,
-    Seven = 7,
-    Six = 6,
-    Five = 5,
-    Four = 4,
-    Three = 3,
-    Two = 2,
+    Two,
+    Three,
+    Four,
+    Five,
+    Six,
+    Seven,
+    Eight,
+    Nine,
+    Ten,
+    Jack,
+    Queen,
+    King,
+    Ace,
 }
 
 impl From<u8> for Value {
