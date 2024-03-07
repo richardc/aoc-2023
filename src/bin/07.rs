@@ -72,7 +72,7 @@ impl PartialOrd for Hand {
 }
 
 impl Hand {
-    fn from_str(s: &str, jokers_wild: bool) -> Result<Self, anyhow::Error> {
+    fn new(s: &str, jokers_wild: bool) -> Result<Self, anyhow::Error> {
         let mut histo = HashMap::new();
         for b in s.as_bytes() {
             histo.entry(b).and_modify(|x| *x += 1).or_insert(1);
@@ -121,20 +121,18 @@ struct Camel {
 }
 
 impl Camel {
-    fn from_str(s: &str, jokers_wild: bool) -> Result<Self, anyhow::Error> {
+    fn new(s: &str, jokers_wild: bool) -> Result<Self, anyhow::Error> {
         let mut game = Self::default();
         for l in s.lines() {
             let Some((cards, bet)) = l.split_once(' ') else {
                 bail!("input {}", l)
             };
-            let hand: Hand = Hand::from_str(cards, jokers_wild)?;
+            let hand: Hand = Hand::new(cards, jokers_wild)?;
             game.hands.push((hand, bet.parse()?));
         }
         Ok(game)
     }
-}
 
-impl Camel {
     fn total_winnings(&self) -> u32 {
         let mut winnings = 0;
         for (rank, (_hand, bid)) in self
@@ -150,12 +148,12 @@ impl Camel {
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let game = Camel::from_str(input, false).unwrap();
+    let game = Camel::new(input, false).unwrap();
     Some(game.total_winnings())
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    let game = Camel::from_str(input, true).unwrap();
+    let game = Camel::new(input, true).unwrap();
     Some(game.total_winnings())
 }
 
@@ -167,7 +165,7 @@ mod tests {
 
     #[test]
     fn test_hand_fromstr() {
-        let hand: Hand = Hand::from_str("AAAAA", false).unwrap();
+        let hand: Hand = Hand::new("AAAAA", false).unwrap();
         assert_eq!(
             hand,
             Hand {
@@ -193,15 +191,15 @@ mod tests {
     #[test_case("AA32J", true, Rank::ThreeOfAKind)]
     #[test_case("2345J", true, Rank::OnePair)]
     fn test_hand_kind(hand: &str, jokers_wild: bool, kind: Rank) {
-        let result = Hand::from_str(hand, jokers_wild).unwrap();
+        let result = Hand::new(hand, jokers_wild).unwrap();
         assert_eq!(result.rank, kind);
     }
 
     #[test_case("AAAAA", "22222")]
     #[test_case("AAAAA", "23456")]
     fn test_hand_beats(hand1: &str, hand2: &str) {
-        let hand1 = Hand::from_str(hand1, false).unwrap();
-        let hand2 = Hand::from_str(hand2, false).unwrap();
+        let hand1 = Hand::new(hand1, false).unwrap();
+        let hand2 = Hand::new(hand2, false).unwrap();
         check!(hand1 > hand2);
     }
 
