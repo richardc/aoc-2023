@@ -110,7 +110,7 @@ impl Hand {
                 [2, 1, 1, 1] => Rank::OnePair,
                 _ => Rank::HighCard,
             },
-            jokers_wild: jokers_wild,
+            jokers_wild,
         })
     }
 }
