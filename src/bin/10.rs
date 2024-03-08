@@ -191,6 +191,7 @@ impl Maze {
         while let Some(State { cost, position }) = queue.pop() {
             if let Some(known) = dist.get(&position) {
                 if cost > *known {
+                    // already found a cheaper way to get here, no further exploration
                     continue;
                 }
             }
@@ -202,6 +203,7 @@ impl Maze {
                 };
                 if let Some(known) = dist.get(&frontier) {
                     if next.cost > *known {
+                        // new path is more expensive than known, so don't consider
                         continue;
                     }
                 }
