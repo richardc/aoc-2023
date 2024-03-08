@@ -215,8 +215,15 @@ pub fn part_one(input: &str) -> Option<usize> {
     Some(maze.furthest_loop_distance())
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+impl Maze {
+    fn contained_cells(&self) -> usize {
+        0
+    }
+}
+
+pub fn part_two(input: &str) -> Option<usize> {
+    let maze = Maze::new(input);
+    Some(maze.contained_cells())
 }
 
 #[cfg(test)]
@@ -245,8 +252,34 @@ mod tests {
     }
 
     #[test]
-    fn test_part_two() {
-        let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+    fn test_part_two_first() {
+        let result = part_two(&advent_of_code::template::read_file_part(
+            "examples", DAY, 3,
+        ));
+        assert_eq!(result, Some(4));
+    }
+
+    #[test]
+    fn test_part_two_second() {
+        let result = part_two(&advent_of_code::template::read_file_part(
+            "examples", DAY, 4,
+        ));
+        assert_eq!(result, Some(4));
+    }
+
+    #[test]
+    fn test_part_two_third() {
+        let result = part_two(&advent_of_code::template::read_file_part(
+            "examples", DAY, 5,
+        ));
+        assert_eq!(result, Some(8));
+    }
+
+    #[test]
+    fn test_part_two_fourth() {
+        let result = part_two(&advent_of_code::template::read_file_part(
+            "examples", DAY, 6,
+        ));
+        assert_eq!(result, Some(10));
     }
 }
