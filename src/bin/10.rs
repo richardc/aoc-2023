@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use pathfinding::directed::bfs::bfs_loop;
 
 advent_of_code::solution!(10);
@@ -69,9 +71,9 @@ impl Maze {
 
     fn get(&self, r: i32, c: i32) -> Tile {
         if r < 0
-            || r as usize > self.cells.len()
+            || r as usize >= self.cells.len()
             || c < 0
-            || c as usize > self.cells[r as usize].len()
+            || c as usize >= self.cells[r as usize].len()
         {
             return Tile::Empty;
         }
@@ -190,7 +192,7 @@ impl Maze {
     fn looping_path(&self) -> Vec<(i32, i32, Direction)> {
         let direction = match self.get(self.start.0, self.start.1) {
             Tile::Vertical => Direction::North,
-            Tile::CornerL => Direction::West,
+            Tile::CornerL => Direction::North,
             Tile::CornerJ => Direction::East,
             Tile::Horizontal => Direction::East,
             Tile::Corner7 => Direction::North,
@@ -219,7 +221,48 @@ pub fn part_one(input: &str) -> Option<usize> {
 
 impl Maze {
     fn contained_cells(&self) -> usize {
-        0
+        let path = self.looping_path();
+        let on_path: HashSet<(i32, i32)> = path.iter().map(|&(r, c, _)| (r, c)).collect();
+        let mut contained: HashSet<(i32, i32)> = HashSet::new();
+
+        fn flood_inside(
+            contained: &mut HashSet<(i32, i32)>,
+            path: &HashSet<(i32, i32)>,
+            row: i32,
+            column: i32,
+        ) {
+            if path.contains(&(row, column)) {
+                return;
+            }
+
+            if contained.insert((row, column)) {
+                flood_inside(contained, path, row + 1, column);
+                flood_inside(contained, path, row - 1, column);
+                flood_inside(contained, path, row, column + 1);
+                flood_inside(contained, path, row, column - 1);
+            }
+        }
+
+        for (row, column, direction) in path {
+            let tile = self.get(row, column);
+            match (tile, direction) {
+                (Tile::Horizontal, Direction::East) => {
+                    flood_inside(&mut contained, &on_path, row + 1, column)
+                }
+                (Tile::Horizontal, Direction::West) => {
+                    flood_inside(&mut contained, &on_path, row - 1, column)
+                }
+                (Tile::Vertical, Direction::North) => {
+                    flood_inside(&mut contained, &on_path, row, column + 1)
+                }
+                (Tile::Vertical, Direction::South) => {
+                    flood_inside(&mut contained, &on_path, row, column - 1)
+                }
+                _ => (),
+            }
+        }
+
+        contained.len()
     }
 }
 
