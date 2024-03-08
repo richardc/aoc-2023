@@ -60,10 +60,6 @@ impl Maze {
         maze
     }
 
-    fn start(&self) -> (i32, i32) {
-        self.start
-    }
-
     fn get(&self, r: i32, c: i32) -> Tile {
         if r < 0
             || r as usize > self.cells.len()
@@ -238,7 +234,7 @@ mod tests {
     #[test]
     fn test_maze_start() {
         let maze = Maze::new(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(maze.start(), (1, 1));
+        assert_eq!(maze.start, (1, 1));
         assert_eq!(maze.start_tile(), Tile::SE);
     }
 
