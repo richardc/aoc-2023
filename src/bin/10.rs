@@ -138,6 +138,8 @@ impl Maze {
 
             (_, Tile::Vertical, _, Tile::CornerJ) => Tile::CornerF,
             (_, Tile::Vertical, _, Tile::Corner7) => Tile::CornerF,
+            (_, Tile::CornerJ, _, Tile::Corner7) => Tile::CornerF,
+            (_, Tile::CornerF, _, Tile::Corner7) => Tile::CornerF,
 
             _ => unreachable!(
                 "can't deduce start kind ({:?}, {:?}, {:?}, {:?})",
