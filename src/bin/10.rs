@@ -221,7 +221,7 @@ pub fn part_one(input: &str) -> Option<usize> {
 }
 
 // right turn +1, or every left -1.  If we're positive, it's a clockwise path
-fn is_path_clockwise(path: &Vec<(i32, i32, Direction)>) -> bool {
+fn is_path_clockwise(path: &[(i32, i32, Direction)]) -> bool {
     path.iter()
         .map(|v| v.2)
         .tuple_windows()
@@ -243,7 +243,7 @@ fn is_path_clockwise(path: &Vec<(i32, i32, Direction)>) -> bool {
         > 0
 }
 
-fn reverse_path(path: &Vec<(i32, i32, Direction)>) -> Vec<(i32, i32, Direction)> {
+fn reverse_path(path: &[(i32, i32, Direction)]) -> Vec<(i32, i32, Direction)> {
     path.iter()
         .rev()
         .map(|&(r, c, d)| {
