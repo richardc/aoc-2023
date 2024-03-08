@@ -1,7 +1,4 @@
-use std::{
-    cmp::Ordering,
-    collections::{BinaryHeap, HashMap},
-};
+use pathfinding::directed::bfs::bfs_loop;
 
 advent_of_code::solution!(10);
 
@@ -37,6 +34,14 @@ impl Tile {
 struct Maze {
     start: (i32, i32),
     cells: Vec<Vec<Tile>>,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+enum Direction {
+    North,
+    South,
+    East,
+    West,
 }
 
 impl Maze {
@@ -141,78 +146,67 @@ impl Maze {
         }
     }
 
-    fn connected(&self, r: i32, c: i32) -> Vec<(i32, i32)> {
+    fn next_step(&self, r: i32, c: i32, facing: Direction) -> (i32, i32, Direction) {
         let tile = &self.cells[r as usize][c as usize];
 
-        match tile {
-            Tile::NS => vec![(r - 1, c), (r + 1, c)],
-            Tile::WE => vec![(r, c - 1), (r, c + 1)],
-            Tile::NE => vec![(r - 1, c), (r, c + 1)],
-            Tile::NW => vec![(r - 1, c), (r, c - 1)],
-            Tile::SE => vec![(r + 1, c), (r, c + 1)],
-            Tile::SW => vec![(r + 1, c), (r, c - 1)],
-            Tile::Empty => vec![],
-            Tile::Start => unreachable!("start left in maze"),
+        let heading = match (tile, &facing) {
+            // keeps on going
+            (Tile::NS, Direction::South) => Direction::South,
+            (Tile::NS, Direction::North) => Direction::North,
+            (Tile::WE, Direction::West) => Direction::West,
+            (Tile::WE, Direction::East) => Direction::East,
+
+            // apporaches from other direction, turns
+            (Tile::NE, Direction::South) => Direction::East,
+            (Tile::NE, Direction::West) => Direction::North,
+
+            (Tile::NW, Direction::South) => Direction::West,
+            (Tile::NW, Direction::East) => Direction::North,
+
+            (Tile::SE, Direction::North) => Direction::East,
+            (Tile::SE, Direction::West) => Direction::South,
+
+            (Tile::SW, Direction::North) => Direction::West,
+            (Tile::SW, Direction::East) => Direction::South,
+
+            _ => {
+                unreachable!("missed {:?} {:?}", tile, facing)
+            }
+        };
+
+        // return our new position and facing
+        match heading {
+            Direction::North => (r - 1, c, heading),
+            Direction::South => (r + 1, c, heading),
+            Direction::East => (r, c + 1, heading),
+            Direction::West => (r, c - 1, heading),
         }
-    }
-}
-
-#[derive(Copy, Clone, Eq, PartialEq)]
-struct State {
-    cost: usize,
-    position: (i32, i32),
-}
-
-impl Ord for State {
-    fn cmp(&self, other: &Self) -> Ordering {
-        other
-            .cost
-            .cmp(&self.cost)
-            .then_with(|| self.position.cmp(&other.position))
-    }
-}
-
-impl PartialOrd for State {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
     }
 }
 
 impl Maze {
+    fn looping_path(&self) -> Vec<(i32, i32, Direction)> {
+        let direction = match self.get(self.start.0, self.start.1) {
+            Tile::NS => Direction::North,
+            Tile::NE => Direction::West,
+            Tile::NW => Direction::East,
+            Tile::WE => Direction::East,
+            Tile::SW => Direction::North,
+            Tile::SE => Direction::North,
+            tile => unreachable!("start tile shouldn't be a {:?}", tile),
+        };
+        let Some(path) = bfs_loop(&(self.start.0, self.start.1, direction), |n| {
+            vec![self.next_step(n.0, n.1, n.2)]
+        }) else {
+            unreachable!("there should be a looping path");
+        };
+
+        path
+    }
+
     fn furthest_loop_distance(&self) -> usize {
-        let mut dist: HashMap<(i32, i32), usize> = HashMap::new();
-        let mut queue = BinaryHeap::new();
-        dist.insert(self.start, 0);
-        queue.push(State {
-            cost: 0,
-            position: self.start,
-        });
-
-        while let Some(State { cost, position }) = queue.pop() {
-            if let Some(known) = dist.get(&position) {
-                if cost > *known {
-                    // already found a cheaper way to get here, no further exploration
-                    continue;
-                }
-            }
-
-            for frontier in self.connected(position.0, position.1) {
-                let next = State {
-                    cost: cost + 1,
-                    position: frontier,
-                };
-                if let Some(known) = dist.get(&frontier) {
-                    if next.cost > *known {
-                        // new path is more expensive than known, so don't consider
-                        continue;
-                    }
-                }
-                queue.push(next);
-                dist.insert(frontier, next.cost);
-            }
-        }
-
-        *dist.values().max().unwrap()
+        let path = self.looping_path();
+        path.len() / 2
     }
 }
 
