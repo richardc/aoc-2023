@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use itertools::Itertools;
 use pathfinding::directed::bfs::bfs_loop;
 
 advent_of_code::solution!(10);
@@ -160,7 +161,7 @@ impl Maze {
             (Tile::Horizontal, Direction::West) => Direction::West,
             (Tile::Horizontal, Direction::East) => Direction::East,
 
-            // apporaches from other direction, turns
+            // approaches from other direction, turns
             (Tile::CornerL, Direction::South) => Direction::East,
             (Tile::CornerL, Direction::West) => Direction::North,
 
@@ -219,12 +220,49 @@ pub fn part_one(input: &str) -> Option<usize> {
     Some(maze.furthest_loop_distance())
 }
 
+// right turn +1, or every left -1.  If we're positive, it's a clockwise path
+fn is_path_clockwise(path: &Vec<(i32, i32, Direction)>) -> bool {
+    path.iter()
+        .map(|v| v.2)
+        .tuple_windows()
+        .map(|(facing, direction)| match (facing, direction) {
+            (Direction::North, Direction::East) => 1,
+            (Direction::North, Direction::West) => -1,
+
+            (Direction::South, Direction::East) => -1,
+            (Direction::South, Direction::West) => 1,
+
+            (Direction::West, Direction::North) => 1,
+            (Direction::West, Direction::South) => -1,
+
+            (Direction::East, Direction::North) => -1,
+            (Direction::East, Direction::South) => 1,
+            _ => 0,
+        })
+        .sum::<i32>()
+        > 0
+}
+
+fn reverse_path(path: &Vec<(i32, i32, Direction)>) -> Vec<(i32, i32, Direction)> {
+    path.iter()
+        .rev()
+        .map(|&(r, c, d)| {
+            (
+                r,
+                c,
+                match d {
+                    Direction::North => Direction::South,
+                    Direction::South => Direction::North,
+                    Direction::West => Direction::East,
+                    Direction::East => Direction::West,
+                },
+            )
+        })
+        .collect()
+}
+
 impl Maze {
     fn contained_cells(&self) -> usize {
-        let path = self.looping_path();
-        let on_path: HashSet<(i32, i32)> = path.iter().map(|&(r, c, _)| (r, c)).collect();
-        let mut contained: HashSet<(i32, i32)> = HashSet::new();
-
         fn flood_inside(
             contained: &mut HashSet<(i32, i32)>,
             path: &HashSet<(i32, i32)>,
@@ -243,6 +281,17 @@ impl Maze {
             }
         }
 
+        let path = self.looping_path();
+        let on_path: HashSet<(i32, i32)> = path.iter().map(|&(r, c, _)| (r, c)).collect();
+        let mut contained: HashSet<(i32, i32)> = HashSet::new();
+
+        // we always want to go clockwise so the contained cells are to the travellers right
+        let path = if is_path_clockwise(&path) {
+            path
+        } else {
+            reverse_path(&path)
+        };
+
         for (row, column, direction) in path {
             let tile = self.get(row, column);
             match (tile, direction) {
@@ -257,6 +306,17 @@ impl Maze {
                 }
                 (Tile::Vertical, Direction::South) => {
                     flood_inside(&mut contained, &on_path, row, column - 1)
+                }
+                (Tile::Corner7, Direction::South) => {
+                    flood_inside(&mut contained, &on_path, row + 1, column - 1)
+                }
+                (Tile::CornerF, Direction::South) => {
+                    flood_inside(&mut contained, &on_path, row - 1, column);
+                    flood_inside(&mut contained, &on_path, row, column - 1);
+                }
+                (Tile::CornerJ, Direction::North) => {
+                    flood_inside(&mut contained, &on_path, row, column + 1);
+                    flood_inside(&mut contained, &on_path, row + 1, column);
                 }
                 _ => (),
             }
