@@ -41,11 +41,13 @@ struct Maze {
 
 impl Maze {
     fn new(s: &str) -> Self {
-        let mut maze = Self::default();
-        maze.cells = s
-            .lines()
-            .map(|l| l.bytes().map(Tile::new).collect())
-            .collect();
+        let mut maze = Self {
+            cells: s
+                .lines()
+                .map(|l| l.bytes().map(Tile::new).collect())
+                .collect(),
+            ..Default::default()
+        };
 
         'scan: for (r, row) in maze.cells.iter().enumerate() {
             for (c, tile) in row.iter().enumerate() {
