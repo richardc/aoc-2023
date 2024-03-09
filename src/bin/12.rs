@@ -38,8 +38,16 @@ pub fn part_one(input: &str) -> Option<usize> {
     Some(input.lines().map(num_completions).sum())
 }
 
-pub fn part_two(_input: &str) -> Option<usize> {
-    None
+pub fn unfold(s: &str) -> String {
+    let Some((record, summary)) = s.split_once(' ') else {
+        unreachable!("no space in line");
+    };
+
+    (0..5).map(|_| record).join("?") + " " + &(0..5).map(|_| summary).join(",")
+}
+
+pub fn part_two(input: &str) -> Option<usize> {
+    Some(input.lines().map(unfold).map(|s| num_completions(&s)).sum())
 }
 
 #[cfg(test)]
@@ -58,6 +66,11 @@ mod tests {
     }
 
     #[test]
+    fn test_unfold() {
+        assert_eq!(unfold(".# 1"), ".#?.#?.#?.#?.# 1,1,1,1,1")
+    }
+
+    #[test]
     fn test_generates_double() {
         assert_eq!(generate_records("?.?"), vec!["...", "#..", "..#", "#.#"])
     }
@@ -71,6 +84,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(525152));
     }
 }
