@@ -9,17 +9,17 @@ struct Image {
 }
 
 impl Image {
-    fn new(s: &str) -> Self {
+    fn new(s: &str, slow: usize) -> Self {
         let data: Vec<Vec<bool>> = s
             .lines()
             .map(|l| l.bytes().map(|b| b == b'#').collect())
             .collect();
         let slow_rows = data
             .iter()
-            .map(|row| if row.iter().all(|b| !*b) { 1 } else { 0 })
+            .map(|row| if row.iter().all(|b| !*b) { slow } else { 0 })
             .collect();
         let slow_cols = (0..(data[0].len()))
-            .map(|c| if data.iter().all(|r| !r[c]) { 1 } else { 0 })
+            .map(|c| if data.iter().all(|r| !r[c]) { slow } else { 0 })
             .collect();
         Self {
             data,
@@ -57,12 +57,13 @@ impl Image {
 }
 
 pub fn part_one(input: &str) -> Option<usize> {
-    let image = Image::new(input);
+    let image = Image::new(input, 1);
     Some(image.sum_paths())
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<usize> {
+    let image = Image::new(input, 1_000_000 - 1);
+    Some(image.sum_paths())
 }
 
 #[cfg(test)]
@@ -76,8 +77,20 @@ mod tests {
     }
 
     #[test]
-    fn test_part_two() {
-        let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+    fn test_part_two_ten() {
+        let image = Image::new(
+            &advent_of_code::template::read_file("examples", DAY),
+            10 - 1,
+        );
+        assert_eq!(image.sum_paths(), 1030);
+    }
+
+    #[test]
+    fn test_part_two_hundred() {
+        let image = Image::new(
+            &advent_of_code::template::read_file("examples", DAY),
+            100 - 1,
+        );
+        assert_eq!(image.sum_paths(), 8410);
     }
 }
