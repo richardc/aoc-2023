@@ -3,21 +3,33 @@ use itertools::Itertools;
 advent_of_code::solution!(11);
 
 struct Image {
-    galaxies: Vec<Vec<bool>>,
+    data: Vec<Vec<bool>>,
+    slow_rows: Vec<usize>,
+    slow_cols: Vec<usize>,
 }
 
 impl Image {
     fn new(s: &str) -> Self {
+        let data: Vec<Vec<bool>> = s
+            .lines()
+            .map(|l| l.bytes().map(|b| b == b'#').collect())
+            .collect();
+        let slow_rows = data
+            .iter()
+            .map(|row| if row.iter().all(|b| !*b) { 1 } else { 0 })
+            .collect();
+        let slow_cols = (0..(data[0].len()))
+            .map(|c| if data.iter().all(|r| !r[c]) { 1 } else { 0 })
+            .collect();
         Self {
-            galaxies: s
-                .lines()
-                .map(|l| l.bytes().map(|b| b == b'#').collect())
-                .collect(),
+            data,
+            slow_rows,
+            slow_cols,
         }
     }
 
     fn galaxies(&self) -> Vec<(usize, usize)> {
-        self.galaxies
+        self.data
             .iter()
             .enumerate()
             .flat_map(|(r, row)| {
@@ -32,7 +44,14 @@ impl Image {
         self.galaxies()
             .iter()
             .tuple_combinations()
-            .map(|(&(y1, x1), &(y2, x2))| y1.abs_diff(y2) + x1.abs_diff(x2))
+            .map(|(&(r1, c1), &(r2, c2))| {
+                let (r1, r2) = if r1 > r2 { (r2, r1) } else { (r1, r2) };
+                let (c1, c2) = if c1 > c2 { (c2, c1) } else { (c1, c2) };
+                self.slow_cols[c1..c2].iter().sum::<usize>()
+                    + self.slow_rows[r1..r2].iter().sum::<usize>()
+                    + (r2 - r1)
+                    + (c2 - c1)
+            })
             .sum()
     }
 }
