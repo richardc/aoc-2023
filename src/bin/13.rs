@@ -73,12 +73,7 @@ impl Image {
     }
 
     fn horizontal(&self) -> Option<usize> {
-        for i in 1..self.data.len() {
-            if self.is_horizontal_mirror(i) {
-                return Some(i);
-            }
-        }
-        None
+        (1..self.data.len()).find(|&i| self.is_horizontal_mirror(i))
     }
 
     fn is_vertical_mirror(&self, col: usize) -> bool {
@@ -103,12 +98,7 @@ impl Image {
     }
 
     fn vertical(&self) -> Option<usize> {
-        for i in 1..self.data[0].len() {
-            if self.is_vertical_mirror(i) {
-                return Some(i);
-            }
-        }
-        None
+        (1..self.data[0].len()).find(|&i| self.is_vertical_mirror(i))
     }
 }
 
