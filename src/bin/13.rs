@@ -17,6 +17,7 @@ impl Tile {
 }
 struct Image {
     data: Vec<Vec<Tile>>,
+    smudge: bool,
 }
 
 #[derive(PartialEq, Debug)]
@@ -26,12 +27,12 @@ enum Reflection {
 }
 
 impl Image {
-    fn new(s: &str) -> Self {
+    fn new(s: &str, smudge: bool) -> Self {
         let data = s
             .lines()
             .map(|l| l.bytes().map(Tile::new).collect())
             .collect();
-        Self { data }
+        Self { data, smudge }
     }
 
     fn reflection(&self) -> Reflection {
@@ -54,9 +55,21 @@ impl Image {
     fn is_horizontal_mirror(&self, row: usize) -> bool {
         let above = row..self.data.len();
         let below = (0..row).rev();
-        below
-            .zip(above)
-            .all(|(above, below)| self.data[above] == self.data[below])
+        let mut matching = 0;
+        let mut matches = 0;
+        for (first, second) in below.zip(above) {
+            for col in 0..self.data[0].len() {
+                matches += 1;
+                if self.data[first][col] == self.data[second][col] {
+                    matching += 1;
+                }
+            }
+        }
+        if self.smudge {
+            matching == matches - 1
+        } else {
+            matching == matches
+        }
     }
 
     fn horizontal(&self) -> Option<usize> {
@@ -71,11 +84,22 @@ impl Image {
     fn is_vertical_mirror(&self, col: usize) -> bool {
         let left = (0..col).rev();
         let right = col..self.data[0].len();
-        left.zip(right).all(|(left, right)| {
-            let left_col: Vec<Tile> = self.data.iter().map(|r| r[left]).collect();
-            let right_col: Vec<Tile> = self.data.iter().map(|r| r[right]).collect();
-            left_col == right_col
-        })
+        let mut matching = 0;
+        let mut matches = 0;
+        for (first, second) in left.zip(right) {
+            for row in 0..self.data.len() {
+                matches += 1;
+                if self.data[row][first] == self.data[row][second] {
+                    matching += 1;
+                }
+            }
+        }
+
+        if self.smudge {
+            matching == matches - 1
+        } else {
+            matching == matches
+        }
     }
 
     fn vertical(&self) -> Option<usize> {
@@ -88,17 +112,18 @@ impl Image {
     }
 }
 
-fn load(i: &str) -> Vec<Image> {
-    i.split("\n\n").map(Image::new).collect()
+fn load(i: &str, smudge: bool) -> Vec<Image> {
+    i.split("\n\n").map(|raw| Image::new(raw, smudge)).collect()
 }
 
 pub fn part_one(input: &str) -> Option<usize> {
-    let images = load(input);
+    let images = load(input, false);
     Some(images.iter().map(|i| i.reflection_value()).sum())
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<usize> {
+    let images = load(input, true);
+    Some(images.iter().map(|i| i.reflection_value()).sum())
 }
 
 #[cfg(test)]
@@ -113,19 +138,31 @@ mod tests {
 
     #[test]
     fn test_reflection_image0() {
-        let images = load(&advent_of_code::template::read_file("examples", DAY));
+        let images = load(&advent_of_code::template::read_file("examples", DAY), false);
         assert_eq!(images[0].reflection(), Reflection::Vertical(5));
     }
 
     #[test]
     fn test_reflection_image1() {
-        let images = load(&advent_of_code::template::read_file("examples", DAY));
+        let images = load(&advent_of_code::template::read_file("examples", DAY), false);
         assert_eq!(images[1].reflection(), Reflection::Horizontal(4));
+    }
+
+    #[test]
+    fn test_reflection_image0_smudged() {
+        let images = load(&advent_of_code::template::read_file("examples", DAY), true);
+        assert_eq!(images[0].reflection(), Reflection::Horizontal(3));
+    }
+
+    #[test]
+    fn test_reflection_image1_smudged() {
+        let images = load(&advent_of_code::template::read_file("examples", DAY), true);
+        assert_eq!(images[1].reflection(), Reflection::Horizontal(1));
     }
 
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(400));
     }
 }
