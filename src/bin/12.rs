@@ -2,24 +2,55 @@ use itertools::Itertools;
 
 advent_of_code::solution!(12);
 
-fn matches_record(s: &str, record: &[usize]) -> bool {
+fn matches_record(s: &[u8], record: &[usize]) -> bool {
     let pattern: Vec<usize> = s
-        .bytes()
-        .group_by(|&b| b == b'#')
+        .iter()
+        .group_by(|&&b| b == b'#')
         .into_iter()
         .filter_map(|(s, g)| if s { Some(g.count()) } else { None })
         .collect();
     record == pattern
 }
 
-fn generate_records(p: &str) -> Vec<String> {
-    if let Some((prefix, rest)) = p.split_once('?') {
-        return generate_records(rest)
-            .iter()
-            .flat_map(|t| vec![prefix.to_owned() + "." + t, prefix.to_owned() + "#" + t])
-            .collect();
+fn generate_records(pattern: &str) -> RecordIter {
+    let pattern = pattern.bytes().collect_vec();
+    let indexes = (0..pattern.len())
+        .filter(|&i| pattern[i] == b'?')
+        .collect_vec();
+    let max = 1 << indexes.len();
+    RecordIter {
+        pattern,
+        indexes,
+        index: 0,
+        max,
     }
-    vec![p.to_string()]
+}
+
+struct RecordIter {
+    pattern: Vec<u8>,
+    indexes: Vec<usize>,
+    index: usize,
+    max: usize,
+}
+
+impl Iterator for RecordIter {
+    type Item = Vec<u8>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index < self.max {
+            let mut pattern = self.pattern.clone();
+            for i in 0..self.indexes.len() {
+                pattern[self.indexes[i]] = if self.index & (1 << i) != 0 {
+                    b'#'
+                } else {
+                    b'.'
+                };
+            }
+            self.index += 1;
+            return Some(pattern);
+        }
+        None
+    }
 }
 
 fn num_completions(s: &str) -> usize {
@@ -29,7 +60,6 @@ fn num_completions(s: &str) -> usize {
     let summary: Vec<usize> = summary.split(',').map(|v| v.parse().unwrap()).collect();
 
     generate_records(record)
-        .iter()
         .filter(|r| matches_record(r, &summary))
         .count()
 }
@@ -55,24 +85,34 @@ mod tests {
     use super::*;
     use test_case::test_case;
 
-    #[test_case("#.#", &[1,1])]
-    fn test_matches(s: &str, r: &[usize]) {
+    #[test_case(b"#.#", &[1,1])]
+    fn test_matches(s: &[u8], r: &[usize]) {
         assert!(matches_record(s, r))
     }
 
     #[test]
     fn test_generates_single() {
-        assert_eq!(generate_records("?"), vec![".", "#"])
+        assert_eq!(
+            generate_records("?")
+                .map(|v| String::from_utf8(v.to_vec()).unwrap())
+                .collect_vec(),
+            vec![".", "#"]
+        )
+    }
+
+    #[test]
+    fn test_generates_double() {
+        assert_eq!(
+            generate_records("?.?")
+                .map(|v| String::from_utf8(v.to_vec()).unwrap())
+                .collect_vec(),
+            vec!["...", "#..", "..#", "#.#"]
+        )
     }
 
     #[test]
     fn test_unfold() {
         assert_eq!(unfold(".# 1"), ".#?.#?.#?.#?.# 1,1,1,1,1")
-    }
-
-    #[test]
-    fn test_generates_double() {
-        assert_eq!(generate_records("?.?"), vec!["...", "#..", "..#", "#.#"])
     }
 
     #[test]
