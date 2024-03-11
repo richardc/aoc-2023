@@ -25,7 +25,8 @@ struct Lens<'a> {
 }
 
 fn focusing_power(s: &str) -> usize {
-    let mut boxes: [Vec<Lens>; 256] = [(); 256].map(|()| Vec::new());
+    const SLOTS: usize = 256;
+    let mut boxes: [Vec<Lens>; SLOTS] = [(); SLOTS].map(|()| Vec::new());
 
     for instruction in s.trim().split(',') {
         if let Some((label, length)) = instruction.split_once('=') {
