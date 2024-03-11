@@ -30,7 +30,7 @@ fn focusing_power(s: &str) -> usize {
 
     for instruction in s.trim().split(',') {
         if let Some((label, length)) = instruction.split_once('=') {
-            let hash = hoho_hash(&label);
+            let hash = hoho_hash(label);
             let length = length.parse().unwrap();
             if let Some(index) = boxes[hash].iter().position(|l| l.label == label) {
                 boxes[hash][index].length = length;
