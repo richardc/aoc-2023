@@ -78,10 +78,10 @@ impl Maze {
         }
     }
 
-    fn energised(&self) -> usize {
+    fn energised(&self, start: (usize, usize, Direction)) -> usize {
         use Cell::*;
         use Direction::*;
-        let mut queue = vec![(0, 0, East)];
+        let mut queue = vec![start];
         let mut visited = HashSet::new();
 
         'path: while let Some((mut row, mut col, mut direction)) = queue.pop() {
@@ -149,11 +149,19 @@ impl Maze {
 }
 
 pub fn part_one(input: &str) -> Option<usize> {
-    Some(Maze::new(input).energised())
+    Some(Maze::new(input).energised((0, 0, Direction::East)))
 }
 
-pub fn part_two(_input: &str) -> Option<usize> {
-    None
+pub fn part_two(input: &str) -> Option<usize> {
+    let maze = Maze::new(input);
+    let mut starts = Vec::new();
+    starts.extend((0..maze.height).map(|r| (r, 0, Direction::East)));
+    starts.extend((0..maze.height).map(|r| (r, maze.width - 1, Direction::West)));
+
+    starts.extend((0..maze.width).map(|c| (0, c, Direction::South)));
+    starts.extend((0..maze.width).map(|c| (maze.height - 1, c, Direction::North)));
+
+    starts.iter().map(|&start| maze.energised(start)).max()
 }
 
 #[cfg(test)]
@@ -169,6 +177,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(51));
     }
 }
