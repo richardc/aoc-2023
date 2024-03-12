@@ -46,7 +46,13 @@ impl Cart {
         (self.row, self.column)
     }
 
-    fn go(&self, direction: Direction, maze: &Maze) -> Option<Self> {
+    fn go(
+        &self,
+        direction: Direction,
+        can_turn: fn(usize) -> bool,
+        must_turn: fn(usize) -> bool,
+        maze: &Maze,
+    ) -> Option<Self> {
         use Direction::*;
         let mut next = self.clone();
         next.direction = Some(direction);
@@ -62,12 +68,17 @@ impl Cart {
                 // continue forward
                 next.run += 1;
 
-                if next.run >= 3 {
-                    // we can't go straight on more than twice
+                // unless we've being going forward too long
+                if must_turn(next.run) {
                     return None;
                 }
             } else {
-                next.run = 0;
+                // a turn, are we allowed it?
+                if can_turn(next.run) {
+                    next.run = 0;
+                } else {
+                    return None;
+                }
             }
         }
 
@@ -102,8 +113,13 @@ impl Cart {
         Some(next)
     }
 
-    fn successors(&self, maze: &Maze) -> Vec<(Self, u32)> {
-        let neighbours = Direction::iter().filter_map(|d| self.go(d, maze));
+    fn successors(
+        &self,
+        can_turn: fn(usize) -> bool,
+        must_turn: fn(usize) -> bool,
+        maze: &Maze,
+    ) -> Vec<(Self, u32)> {
+        let neighbours = Direction::iter().filter_map(|d| self.go(d, can_turn, must_turn, maze));
         neighbours
             .map(|cart| {
                 let cost = maze.cost(cart.position());
@@ -138,11 +154,11 @@ impl Maze {
         self.data[position.0][position.1] as u32
     }
 
-    fn min_heat_loss(&self) -> u32 {
+    fn min_heat_loss(&self, can_turn: fn(usize) -> bool, must_turn: fn(usize) -> bool) -> u32 {
         let goal = (self.height - 1, self.width - 1);
         let Some((_, cost)) = dijkstra(
             &Cart::new(0, 0),
-            |cart| cart.successors(self),
+            |cart| cart.successors(can_turn, must_turn, self),
             |cart| cart.position() == goal,
         ) else {
             unreachable!("should have a path");
@@ -150,15 +166,30 @@ impl Maze {
 
         cost
     }
+
+    fn crucible_heat_loss(&self) -> u32 {
+        let can_turn = |_| true;
+        let must_turn = |step| step >= 3;
+
+        self.min_heat_loss(can_turn, must_turn)
+    }
+
+    fn ultracrucible_heat_loss(&self) -> u32 {
+        let can_turn = |step| step >= 3;
+        let must_turn = |step| step >= 10;
+
+        self.min_heat_loss(can_turn, must_turn)
+    }
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
     let maze = Maze::new(input);
-    Some(maze.min_heat_loss())
+    Some(maze.crucible_heat_loss())
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<u32> {
+    let maze = Maze::new(input);
+    Some(maze.ultracrucible_heat_loss())
 }
 
 #[cfg(test)]
@@ -174,6 +205,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(94));
     }
 }
