@@ -96,13 +96,13 @@ impl Cart {
                 }
                 next.row += 1;
             }
-            East => {
+            West => {
                 if self.column == 0 {
                     return None;
                 }
                 next.column -= 1;
             }
-            West => {
+            East => {
                 if self.column == maze.width - 1 {
                     return None;
                 }
