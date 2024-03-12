@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use itertools::Itertools;
 
 advent_of_code::solution!(18);
@@ -21,15 +19,6 @@ impl Direction {
             b'R' | b'0' => Right,
             b'L' | b'2' => Left,
             _ => unreachable!("bad direction {}", b as char),
-        }
-    }
-    fn reverse(&self) -> Self {
-        use Direction::*;
-        match &self {
-            Up => Down,
-            Down => Up,
-            Left => Right,
-            Right => Left,
         }
     }
 }
@@ -80,67 +69,34 @@ impl Digger {
     }
 
     fn cubic_meters(&self) -> usize {
-        let mut dug_out: HashSet<(i32, i32)> = HashSet::new();
-
-        let (mut r, mut c) = (0, 0);
-
+        let mut points: Vec<(i64, i64)> = vec![(0, 0)];
+        let mut r = 0;
+        let mut c = 0;
+        let mut edges = 0;
         use Direction::*;
-
-        dug_out.insert((0, 0));
-        let mut path = Vec::new();
         for step in &self.instructions {
-            for _ in 0..step.distance {
-                match step.direction {
-                    Right => c += 1,
-                    Left => c -= 1,
-                    Up => r -= 1,
-                    Down => r += 1,
-                }
-                dug_out.insert((r, c));
-                path.push((r, c, step.direction));
+            match step.direction {
+                Right => c += step.distance,
+                Left => c -= step.distance,
+                Up => r -= step.distance,
+                Down => r += step.distance,
             }
+            edges += step.distance;
+            points.push((r as i64, c as i64));
         }
 
-        let clockwise = self
-            .instructions
+        // https://en.wikipedia.org/wiki/Shoelace_formula
+        // via https://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates
+        let area = points
             .iter()
-            .map(|i| i.direction)
             .tuple_windows()
-            .map(|(from, to)| match (from, to) {
-                (Up, Right) | (Right, Down) | (Down, Left) | (Left, Up) => 1,
-                (Up, Left) | (Left, Down) | (Down, Right) | (Right, Up) => -1,
-                _ => 0,
-            })
-            .sum::<i32>()
-            > 0;
+            .map(|((r1, c1), (r2, c2))| c1 * r2 - c2 * r1)
+            .sum::<i64>()
+            .abs()
+            / 2;
 
-        let path = if clockwise {
-            path
-        } else {
-            path.iter()
-                .rev()
-                .map(|&(r, c, d)| (r, c, d.reverse()))
-                .collect()
-        };
-
-        fn flood_fill(row: i32, col: i32, hole: &mut HashSet<(i32, i32)>) {
-            if hole.insert((row, col)) {
-                flood_fill(row + 1, col, hole);
-                flood_fill(row - 1, col, hole);
-                flood_fill(row, col + 1, hole);
-                flood_fill(row, col - 1, hole);
-            }
-        }
-        for (r, c, d) in path {
-            match d {
-                Up => flood_fill(r, c + 1, &mut dug_out),
-                Right => flood_fill(r + 1, c, &mut dug_out),
-                Down => flood_fill(r, c - 1, &mut dug_out),
-                Left => flood_fill(r - 1, c, &mut dug_out),
-            }
-        }
-
-        dug_out.len()
+        let result = area + edges as i64 / 2 + 1;
+        result as usize
     }
 }
 
@@ -186,7 +142,7 @@ mod tests {
 
     #[test]
     fn test_part_two() {
-        let result = part_one(&advent_of_code::template::read_file("examples", DAY));
+        let result = part_two(&advent_of_code::template::read_file("examples", DAY));
         assert_eq!(result, Some(952_408_144_115));
     }
 }
