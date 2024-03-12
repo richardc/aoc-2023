@@ -84,7 +84,7 @@ impl Digger {
             }
         }
 
-        let clockwise = &self
+        let clockwise = self
             .instructions
             .iter()
             .map(|i| i.direction)
@@ -95,7 +95,7 @@ impl Digger {
                 _ => 0,
             })
             .sum::<i32>()
-            > &0;
+            > 0;
 
         let path = if clockwise {
             path
