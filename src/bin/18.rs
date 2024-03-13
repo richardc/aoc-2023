@@ -75,14 +75,15 @@ impl Digger {
         let mut edges = 0;
         use Direction::*;
         for step in &self.instructions {
+            let distance = step.distance as i64;
             match step.direction {
-                Right => c += step.distance,
-                Left => c -= step.distance,
-                Up => r -= step.distance,
-                Down => r += step.distance,
+                Right => c += distance,
+                Left => c -= distance,
+                Up => r -= distance,
+                Down => r += distance,
             }
             edges += step.distance;
-            points.push((r as i64, c as i64));
+            points.push((r, c));
         }
 
         // https://en.wikipedia.org/wiki/Shoelace_formula
