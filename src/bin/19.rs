@@ -89,7 +89,7 @@ impl Workflow<'_> {
                 return state;
             }
         }
-        return self.default;
+        self.default
     }
 }
 
