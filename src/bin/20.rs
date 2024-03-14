@@ -85,7 +85,7 @@ impl<'b> Network<'b> {
 
     fn send<'a, FN>(&mut self, target: Node<'a>, pulse: Pulse, mut peek: FN)
     where
-        FN: FnMut(Node<'a>, Node<'a>, Pulse) -> (),
+        FN: FnMut(Node<'a>, Node<'a>, Pulse),
         'a: 'b,
         'b: 'a,
     {
