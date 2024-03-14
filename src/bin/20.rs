@@ -85,7 +85,7 @@ impl<'b> Network<'b> {
 
     fn send<'a, FN>(&mut self, target: Node<'a>, pulse: Pulse, mut peek: FN)
     where
-        FN: FnMut(Node, Node, Pulse) -> (),
+        FN: FnMut(Node<'a>, Node<'a>, Pulse) -> (),
         'a: 'b,
         'b: 'a,
     {
@@ -137,15 +137,57 @@ impl<'b> Network<'b> {
         }
         low * high
     }
+
+    fn when_rx_goes_low(&mut self) -> usize {
+        let rx_sources: Vec<_> = self
+            .connections
+            .iter()
+            .filter_map(|(r, v)| if v.contains(&"rx") { Some(r) } else { None })
+            .collect();
+        assert!(rx_sources.len() == 1);
+        let rx_source = *rx_sources[0];
+        assert!(self.modules.get(rx_source) == Some(&Module::Conjunction));
+
+        let mut steps: HashMap<&str, usize> = self
+            .connections
+            .iter()
+            .filter_map(|(&r, v)| {
+                if v.contains(&rx_source) {
+                    Some((r, 0))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        assert!(steps
+            .keys()
+            .all(|source| self.modules.get(source) == Some(&Module::Conjunction)));
+
+        let mut step = 0;
+        loop {
+            step += 1;
+            self.send("broadcaster", Pulse::Low, |to, from, pulse| {
+                if to == rx_source && pulse == Pulse::High {
+                    // This is the cycle for the module `from`
+                    steps.entry(from).and_modify(|s| *s = step);
+                }
+            });
+
+            // We have all cycles, time to maths
+            if steps.values().all(|&v| v > 0) {
+                break;
+            }
+        }
+        steps.values().map(|&v| v).reduce(num_integer::lcm).unwrap()
+    }
 }
 
 pub fn part_one(input: &str) -> Option<usize> {
-    let mut network = Network::new(input);
-    Some(network.pulse_count())
+    Some(Network::new(input).pulse_count())
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<usize> {
+    Some(Network::new(input).when_rx_goes_low())
 }
 
 #[cfg(test)]
@@ -164,11 +206,5 @@ mod tests {
             "examples", DAY, 2,
         ));
         assert_eq!(result, Some(11_687_500));
-    }
-
-    #[test]
-    fn test_part_two() {
-        let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
     }
 }
