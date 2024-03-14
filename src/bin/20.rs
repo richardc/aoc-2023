@@ -178,7 +178,7 @@ impl<'b> Network<'b> {
                 break;
             }
         }
-        steps.values().map(|&v| v).reduce(num_integer::lcm).unwrap()
+        steps.values().copied().reduce(num_integer::lcm).unwrap()
     }
 }
 
