@@ -4,7 +4,7 @@ use itertools::Itertools;
 
 advent_of_code::solution!(19);
 
-type Value = u32;
+type Value = u64;
 
 enum Op {
     Gt,
@@ -199,13 +199,98 @@ impl<'a> System<'a> {
     }
 }
 
+#[derive(Clone, Copy)]
+struct MinMaxValue {
+    min: Value,
+    max: Value,
+}
+
+impl Default for MinMaxValue {
+    fn default() -> Self {
+        Self { min: 1, max: 4000 }
+    }
+}
+
+impl MinMaxValue {
+    fn range(&self) -> Value {
+        (self.max - self.min) + 1
+    }
+}
+
+#[derive(Default, Clone, Copy)]
+struct MinMaxProduct {
+    x: MinMaxValue,
+    m: MinMaxValue,
+    a: MinMaxValue,
+    s: MinMaxValue,
+}
+
+impl MinMaxProduct {
+    fn get_mut(&mut self, f: Field) -> &mut MinMaxValue {
+        use Field::*;
+        match f {
+            X => &mut self.x,
+            M => &mut self.m,
+            A => &mut self.a,
+            S => &mut self.s,
+        }
+    }
+
+    fn possible_combinations(&self) -> Value {
+        self.x.range() * self.m.range() * self.a.range() * self.s.range()
+    }
+}
+
 pub fn part_one(input: &str) -> Option<Value> {
     let system = System::new(input);
     Some(system.accepted_sum())
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+impl System<'_> {
+    fn accept_minmax(&self, workflow: &str, mut range: MinMaxProduct) -> Value {
+        let mut result = 0;
+        let workflow = self.workflows.get(workflow).unwrap();
+
+        for rule in &workflow.rules {
+            let mut branch_range = range;
+            let value = range.get_mut(rule.field);
+            let branch_value = branch_range.get_mut(rule.field);
+            match rule.op {
+                Op::Gt => {
+                    value.max = rule.value;
+                    branch_value.min = rule.value + 1;
+                }
+                Op::Lt => {
+                    value.min = rule.value;
+                    branch_value.max = rule.value - 1;
+                }
+            }
+
+            result += match rule.target {
+                "A" => branch_range.possible_combinations(),
+                "R" => 0,
+                _ => self.accept_minmax(rule.target, branch_range),
+            }
+        }
+
+        result += match workflow.default {
+            "A" => range.possible_combinations(),
+            "R" => 0,
+            _ => self.accept_minmax(workflow.default, range),
+        };
+
+        result
+    }
+
+    fn possible_combinations(&self) -> Value {
+        let product = MinMaxProduct::default();
+        self.accept_minmax("in", product)
+    }
+}
+
+pub fn part_two(input: &str) -> Option<Value> {
+    let system = System::new(input);
+    Some(system.possible_combinations())
 }
 
 #[cfg(test)]
@@ -221,6 +306,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(167_409_079_868_000));
     }
 }
