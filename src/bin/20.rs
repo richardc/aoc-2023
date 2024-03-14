@@ -54,17 +54,6 @@ impl<'b> Network<'b> {
             })
             .collect();
 
-        let flipflops: HashMap<_, _> = modules
-            .iter()
-            .filter_map(|(&k, &v)| {
-                if v == Module::FlipFlop {
-                    Some((k, false))
-                } else {
-                    None
-                }
-            })
-            .collect();
-
         let conjunctions: HashMap<_, _> = modules
             .iter()
             .filter_map(|(&k, &v)| {
@@ -91,7 +80,6 @@ impl<'b> Network<'b> {
         Self {
             connections,
             modules,
-            flipflops,
             conjunctions,
             ..Default::default()
         }
@@ -117,7 +105,7 @@ impl<'b> Network<'b> {
 
             match (&module, pulse) {
                 (Some(Module::FlipFlop), Pulse::Low) => {
-                    let state = self.flipflops.get_mut(current).unwrap();
+                    let state = self.flipflops.entry(current).or_default();
                     *state = !*state;
                     send = if *state { Pulse::High } else { Pulse::Low };
                 }
