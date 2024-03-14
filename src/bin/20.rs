@@ -23,8 +23,6 @@ struct Network<'a> {
     modules: HashMap<Node<'a>, Module>,
     flipflops: HashMap<Node<'a>, bool>,
     conjunctions: HashMap<Node<'a>, HashMap<Node<'a>, Pulse>>,
-    low: usize,
-    high: usize,
 }
 
 impl<'b> Network<'b> {
@@ -85,8 +83,9 @@ impl<'b> Network<'b> {
         }
     }
 
-    fn send<'a>(&mut self, target: Node<'a>, pulse: Pulse)
+    fn send<'a, FN>(&mut self, target: Node<'a>, pulse: Pulse, mut peek: FN)
     where
+        FN: FnMut(Node, Node, Pulse) -> (),
         'a: 'b,
         'b: 'a,
     {
@@ -94,14 +93,9 @@ impl<'b> Network<'b> {
         queue.push_back((target, "", pulse));
 
         while let Some((current, source, pulse)) = queue.pop_front() {
+            peek(current, source, pulse);
             let module = self.modules.get_mut(current);
-
             let mut send = pulse;
-
-            match pulse {
-                Pulse::Low => self.low += 1,
-                Pulse::High => self.high += 1,
-            };
 
             match (&module, pulse) {
                 (Some(Module::FlipFlop), Pulse::Low) => {
@@ -131,16 +125,22 @@ impl<'b> Network<'b> {
         }
     }
 
-    fn pulse_count(&self) -> usize {
-        self.low * self.high
+    fn pulse_count(&mut self) -> usize {
+        let mut low = 0;
+        let mut high = 0;
+
+        for _ in 0..1000 {
+            self.send("broadcaster", Pulse::Low, |_, _, pulse| match pulse {
+                Pulse::Low => low += 1,
+                Pulse::High => high += 1,
+            });
+        }
+        low * high
     }
 }
 
 pub fn part_one(input: &str) -> Option<usize> {
     let mut network = Network::new(input);
-    for _ in 0..1000 {
-        network.send("broadcaster", Pulse::Low);
-    }
     Some(network.pulse_count())
 }
 
