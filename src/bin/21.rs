@@ -57,6 +57,40 @@ impl Garden {
         }
         steps.len()
     }
+
+    fn many_steps(&self, counts: &[usize]) -> Vec<isize> {
+        let mut results = Vec::new();
+        let mut steps_next: HashSet<(i32, i32)> = HashSet::new();
+        let mut steps: HashSet<(i32, i32)> = HashSet::new();
+        steps.insert(self.start);
+
+        let mut iteration = 0;
+        'counting: for count in counts {
+            loop {
+                iteration += 1;
+                steps_next.clear();
+                for (r, c) in steps.drain() {
+                    for next in [(r + 1, c), (r, c + 1), (r - 1, c), (r, c - 1)] {
+                        let wrapped = (
+                            next.0.rem_euclid(self.height),
+                            next.1.rem_euclid(self.width),
+                        );
+                        if self.walls.contains(&wrapped) {
+                            continue;
+                        }
+                        steps_next.insert(next);
+                    }
+                }
+                (steps, steps_next) = (steps_next, steps);
+                if *count == iteration {
+                    results.push(steps.len() as isize);
+                    continue 'counting;
+                }
+            }
+        }
+
+        results
+    }
 }
 
 pub fn part_one(input: &str) -> Option<usize> {
@@ -70,9 +104,14 @@ impl Garden {
 
         assert!(remainder == (self.width / 2) as usize);
 
-        let v0 = self.steps(remainder) as isize;
-        let v1 = self.steps(remainder + self.width as usize) as isize;
-        let v2 = self.steps(remainder + self.width as usize * 2) as isize;
+        let values = self.many_steps(
+            &(0..=2)
+                .map(|i| remainder + i * self.width as usize)
+                .collect::<Vec<_>>(),
+        );
+        let [v0, v1, v2] = values[..] else {
+            unreachable!("have 3 thingies")
+        };
 
         let a = (v0 - 2 * v1 + v2) / 2;
         let b = (-3 * v0 + 4 * v1 - v2) / 2;
