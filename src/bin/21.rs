@@ -63,9 +63,28 @@ pub fn part_one(input: &str) -> Option<usize> {
     Some(Garden::new(input).steps(64))
 }
 
-pub fn part_two(_input: &str) -> Option<usize> {
-    None
-    // Some(Garden::new(input).steps(26_501_365))
+impl Garden {
+    fn steps_quadratic(&self, steps: usize) -> usize {
+        let n = (steps / self.width as usize) as isize;
+        let remainder = steps % self.width as usize;
+
+        assert!(remainder == (self.width / 2) as usize);
+
+        let v0 = self.steps(remainder) as isize;
+        let v1 = self.steps(remainder + self.width as usize) as isize;
+        let v2 = self.steps(remainder + self.width as usize * 2) as isize;
+
+        let a = (v0 - 2 * v1 + v2) / 2;
+        let b = (-3 * v0 + 4 * v1 - v2) / 2;
+        let c = v0;
+
+        // a * n^2 + bn + c
+        (a * n * n + b * n + c) as usize
+    }
+}
+
+pub fn part_two(input: &str) -> Option<usize> {
+    Some(Garden::new(input).steps_quadratic(26_501_365))
 }
 
 #[cfg(test)]
