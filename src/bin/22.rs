@@ -4,7 +4,7 @@ use itertools::Itertools;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-#[derive(Debug, Default, PartialOrd, PartialEq, Eq)]
+#[derive(Debug, Default, PartialEq, Eq)]
 struct Point3D {
     x: i32,
     y: i32,
@@ -22,22 +22,27 @@ impl Point3D {
     }
 }
 
+impl PartialOrd for Point3D {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 impl Ord for Point3D {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.z.cmp(&other.z)
     }
 }
 
-type BrickId = usize;
-
-#[derive(Debug, Default, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Debug, Default, PartialEq)]
 struct Brick {
-    id: BrickId,
     bounds: (Point3D, Point3D),
+    supports: HashSet<usize>,
+    supported_by: HashSet<usize>,
 }
 
 impl Brick {
-    fn new(s: &str, id: BrickId) -> Self {
+    fn new(s: &str) -> Self {
         let bounds = s
             .split('~')
             .map(Point3D::new)
@@ -45,7 +50,10 @@ impl Brick {
             .collect_tuple()
             .expect("pair of points");
 
-        Self { id, bounds }
+        Self {
+            bounds,
+            ..Default::default()
+        }
     }
 
     fn covers(&self) -> Vec<(i32, i32)> {
@@ -67,30 +75,26 @@ impl Brick {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct Pile {
-    bricks: HashMap<BrickId, Brick>,
-    supports: HashMap<BrickId, Vec<BrickId>>,
-    rests_on: HashMap<BrickId, Vec<BrickId>>,
+    bricks: Vec<Brick>,
 }
 
 impl Pile {
     fn new(s: &str) -> Self {
         let bricks = s
             .lines()
-            .enumerate()
-            .map(|(i, l)| (i, Brick::new(l, i)))
+            .map(Brick::new)
+            .sorted_by(|a, b| b.bounds.cmp(&a.bounds))
             .collect();
-        Self {
-            bricks,
-            ..Default::default()
-        }
+        Self { bricks }
     }
 
     fn drop(&mut self) {
         let mut heights: HashMap<(i32, i32), i32> = HashMap::new();
-        let mut occupies: HashMap<(i32, i32), BrickId> = HashMap::new();
-        for brick in self.bricks.values().sorted() {
+        let mut occupies: HashMap<(i32, i32), usize> = HashMap::new();
+        let mut supports: HashMap<usize, HashSet<usize>> = HashMap::new();
+        for (idx, brick) in self.bricks.iter_mut().enumerate() {
             let base = *brick
                 .covers()
                 .iter()
@@ -99,39 +103,40 @@ impl Pile {
                 .unwrap_or(&0);
 
             let top = base + brick.height();
-            let mut lands_on: HashSet<BrickId> = HashSet::new();
             for (x, y) in brick.covers() {
                 if let Some(height) = heights.insert((x, y), top) {
                     if height == base {
-                        lands_on.insert(*occupies.get(&(x, y)).unwrap());
+                        let other = *occupies.get(&(x, y)).unwrap();
+
+                        brick.supported_by.insert(other);
+                        // Avoid mulitiple mutable borrows from:
+                        //     self.bricks[other].supports.insert(idx);
+                        // Build up another variable and zoop it across after the brick loop
+                        supports
+                            .entry(other)
+                            .and_modify(|s| {
+                                s.insert(idx);
+                            })
+                            .or_insert_with(|| HashSet::from([idx]));
                     }
                 }
-                occupies.insert((x, y), brick.id);
+                occupies.insert((x, y), idx);
             }
+        }
 
-            for other in &lands_on {
-                self.supports
-                    .entry(*other)
-                    .and_modify(|v| v.push(brick.id))
-                    .or_insert_with(|| vec![brick.id]);
-            }
-
-            self.rests_on
-                .insert(brick.id, lands_on.iter().copied().collect());
+        for (idx, set) in supports {
+            self.bricks[idx].supports.extend(set);
         }
     }
 
     fn safely_removable(&self) -> usize {
         self.bricks
-            .keys()
-            .filter(|b| {
-                if let Some(supporting) = self.supports.get(b) {
-                    supporting
-                        .iter()
-                        .all(|s| self.rests_on.get(s).unwrap().len() > 1)
-                } else {
-                    true
-                }
+            .iter()
+            .filter(|brick| {
+                brick
+                    .supports
+                    .iter()
+                    .all(|other| self.bricks[*other].supported_by.len() > 1)
             })
             .count()
     }
@@ -154,25 +159,25 @@ mod tests {
 
     #[test]
     fn test_brick_new() {
-        let result = Brick::new("2,2,2~2,2,2", 0);
+        let result = Brick::new("2,2,2~2,2,2");
         assert_eq!(
             result,
             Brick {
                 bounds: (Point3D { x: 2, y: 2, z: 2 }, Point3D { x: 2, y: 2, z: 2 }),
-                id: 0,
+                ..Default::default()
             },
         )
     }
 
     #[test]
     fn test_brick_height() {
-        let result = Brick::new("2,2,2~2,2,2", 0).height();
+        let result = Brick::new("2,2,2~2,2,2").height();
         assert_eq!(result, 1);
     }
 
     #[test]
     fn test_brick_covers() {
-        let result = Brick::new("2,2,2~2,2,2", 0).covers();
+        let result = Brick::new("2,2,2~2,2,2").covers();
         assert_eq!(result, vec![(2, 2)]);
     }
 
