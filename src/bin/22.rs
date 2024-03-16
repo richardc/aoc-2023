@@ -85,7 +85,7 @@ impl Pile {
         let bricks = s
             .lines()
             .map(Brick::new)
-            .sorted_by(|a, b| b.bounds.cmp(&a.bounds))
+            .sorted_by(|a, b| a.bounds.cmp(&b.bounds))
             .collect();
         Self { bricks }
     }
