@@ -3,6 +3,7 @@ advent_of_code::solution!(22);
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::collections::VecDeque;
 
 #[derive(Debug, Default, PartialEq, Eq)]
 struct Point3D {
@@ -140,6 +141,37 @@ impl Pile {
             })
             .count()
     }
+
+    fn tumble_sum(&self) -> usize {
+        let mut result = 0;
+
+        for (idx, brick) in self.bricks.iter().enumerate() {
+            if brick.supports.is_empty() {
+                continue;
+            }
+            let mut fallen: HashSet<usize> = HashSet::new();
+            let mut queue: VecDeque<usize> = VecDeque::new();
+
+            queue.push_back(idx);
+
+            while let Some(idx) = queue.pop_front() {
+                fallen.insert(idx);
+
+                for &supported in &self.bricks[idx].supports {
+                    if self.bricks[supported]
+                        .supported_by
+                        .iter()
+                        .all(|support| fallen.contains(support))
+                    {
+                        queue.push_back(supported);
+                    }
+                }
+            }
+
+            result += fallen.len() - 1;
+        }
+        result
+    }
 }
 
 pub fn part_one(input: &str) -> Option<usize> {
@@ -149,8 +181,11 @@ pub fn part_one(input: &str) -> Option<usize> {
     Some(pile.safely_removable())
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<usize> {
+    let mut pile = Pile::new(input);
+    pile.drop();
+
+    Some(pile.tumble_sum())
 }
 
 #[cfg(test)]
@@ -190,6 +225,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(7));
     }
 }
