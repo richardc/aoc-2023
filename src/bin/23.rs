@@ -203,6 +203,7 @@ pub fn part_two(input: &str) -> Option<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use assert2::check;
     use test_case::test_case;
 
     #[test_case(Pos(0,1) => vec![Pos(1,1)] ; "0,1: path south")]
@@ -223,6 +224,33 @@ mod tests {
     fn test_dry_neighbours(start: Pos) -> Vec<Pos> {
         let maze = load(&advent_of_code::template::read_file("examples", DAY));
         start.neighbours(&maze, false).collect()
+    }
+
+    #[test]
+    fn test_graph_collapse() {
+        let graph = Graph::new(
+            &load(&advent_of_code::template::read_file_part(
+                "examples", DAY, 2,
+            )),
+            false,
+        );
+        check!(
+            graph.0
+                == HashMap::from([
+                    (Pos(0, 1), HashMap::from([(Pos(1, 1), 1)])),
+                    (Pos(1, 1), HashMap::from([(Pos(0, 1), 1), (Pos(2, 1), 1)])),
+                    (Pos(2, 1), HashMap::from([(Pos(1, 1), 1), (Pos(3, 1), 1)])),
+                    (Pos(3, 1), HashMap::from([(Pos(2, 1), 1)])),
+                ]),
+        );
+
+        check!(
+            graph.collapse().0
+                == HashMap::from([
+                    (Pos(0, 1), HashMap::from([(Pos(3, 1), 4)])),
+                    (Pos(3, 1), HashMap::from([(Pos(0, 1), 4)])),
+                ]),
+        );
     }
 
     #[test]
