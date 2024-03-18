@@ -1,8 +1,9 @@
 advent_of_code::solution!(23);
 
-use std::cmp::max;
-use std::collections::HashSet;
+use std::collections::VecDeque;
+use std::collections::{HashMap, HashSet};
 
+use itertools::Itertools;
 use pathfinding::matrix::Matrix;
 
 #[derive(Debug)]
@@ -36,32 +37,103 @@ impl Cell {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Default, Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct Pos(usize, usize);
 
 impl Pos {
-    fn neighbours<'a>(&'a self, maze: &'a Matrix<Cell>) -> impl Iterator<Item = Pos> + 'a {
+    fn neighbours<'a>(
+        &'a self,
+        maze: &'a Matrix<Cell>,
+        slippy: bool,
+    ) -> impl Iterator<Item = Pos> + 'a {
         use Cell::*;
         use Direction::*;
         maze.neighbours((self.0, self.1), false)
-            .filter(|&next| match maze.get(next).unwrap() {
+            .filter(move |&next| match maze.get(next).unwrap() {
                 Path => true,
                 Forest => false,
-                Slope(d) => match (
-                    (
-                        self.0 as isize - next.0 as isize,
-                        self.1 as isize - next.1 as isize,
-                    ),
-                    d,
-                ) {
-                    ((-1, 0), North) => false,
-                    ((0, 1), East) => false,
-                    ((1, 0), South) => false,
-                    ((0, -1), West) => false,
-                    _ => true,
-                },
+                Slope(d) => {
+                    if slippy {
+                        match (
+                            (
+                                self.0 as isize - next.0 as isize,
+                                self.1 as isize - next.1 as isize,
+                            ),
+                            d,
+                        ) {
+                            ((-1, 0), North) => false,
+                            ((0, 1), East) => false,
+                            ((1, 0), South) => false,
+                            ((0, -1), West) => false,
+                            _ => true,
+                        }
+                    } else {
+                        true
+                    }
+                }
             })
             .map(|next| Pos(next.0, next.1))
+    }
+}
+
+#[derive(Default, Debug)]
+struct Graph(HashMap<Pos, HashMap<Pos, usize>>);
+
+impl Graph {
+    fn new(maze: &Matrix<Cell>, slippy: bool) -> Self {
+        let Graph(mut graph) = Default::default();
+        let mut visited = HashSet::new();
+        let mut queue = VecDeque::from_iter([Pos(0, 1)]);
+
+        while let Some(current) = queue.pop_front() {
+            for neighbour in current.neighbours(maze, slippy) {
+                let e = graph.entry(current).or_default();
+                e.insert(neighbour, 1);
+
+                if visited.insert(neighbour) {
+                    graph.entry(neighbour).or_default();
+                    queue.push_back(neighbour);
+                }
+            }
+        }
+
+        Graph(graph)
+    }
+
+    fn collapse(&self) -> Self {
+        let mut graph = self.0.clone();
+
+        // edge contraction
+        let collapsable: Vec<Pos> = graph
+            .iter()
+            .filter_map(|(&node, edges)| if edges.len() == 2 { Some(node) } else { None })
+            .collect_vec();
+
+        for current in collapsable {
+            dbg!(&current, &graph);
+            let edges = graph.remove(&current).unwrap();
+            let mut edges = edges.iter();
+            let (left, left_distance) = edges.next().unwrap();
+            let (right, right_distance) = edges.next().unwrap();
+            let distance = left_distance + right_distance;
+
+            dbg!(&current, &left, &right);
+
+            let left_edges = graph.get_mut(left).unwrap();
+            if left_edges.contains_key(&current) {
+                let old = left_edges.remove(&current).unwrap();
+                left_edges.insert(*right, distance + old);
+            }
+
+            let right_edges = graph.get_mut(right).unwrap();
+            if right_edges.contains_key(&current) {
+                let old = right_edges.remove(&current).unwrap();
+                right_edges.insert(*left, distance + old);
+            }
+            dbg!(&graph);
+        }
+
+        Graph(graph)
     }
 }
 
@@ -69,56 +141,63 @@ fn load(input: &str) -> Matrix<Cell> {
     Matrix::from_iter(input.lines().map(|l| l.bytes().map(Cell::new)))
 }
 
-fn longest_path(maze: &Matrix<Cell>, start: Pos, goal: Pos) -> usize {
+fn longest_path(graph: &Graph, start: Pos, goal: Pos) -> usize {
     fn walk(
-        maze: &Matrix<Cell>,
+        graph: &Graph,
         current: Pos,
         goal: Pos,
         visited: &mut HashSet<Pos>,
-        current_path: &mut Vec<Pos>,
-        longest: &mut usize,
-    ) {
-        if !visited.insert(current) {
-            return;
-        }
-
-        current_path.push(current);
-
+        distance: usize,
+    ) -> usize {
         if current == goal {
-            *longest = max(*longest, current_path.len() - 1);
-            visited.remove(&current);
-            current_path.pop();
-            return;
+            return distance;
         }
 
-        for neighbour in current.neighbours(maze) {
-            walk(maze, neighbour, goal, visited, current_path, longest);
-        }
+        visited.insert(current);
 
-        current_path.pop();
+        let max = graph
+            .0
+            .get(&current)
+            .unwrap()
+            .iter()
+            .filter_map(|(&neighbour, cost)| {
+                if !visited.contains(&neighbour) {
+                    Some(walk(graph, neighbour, goal, visited, distance + cost))
+                } else {
+                    None
+                }
+            })
+            .max();
+
         visited.remove(&current);
+
+        max.unwrap_or(0)
     }
 
     let mut visited: HashSet<Pos> = HashSet::new();
-    let mut current: Vec<Pos> = Vec::new();
-    let mut longest = 0;
 
-    walk(maze, start, goal, &mut visited, &mut current, &mut longest);
-
-    longest
+    walk(graph, start, goal, &mut visited, 0)
 }
 
 pub fn part_one(input: &str) -> Option<usize> {
     let maze = load(input);
+    let graph = Graph::new(&maze, true);
     Some(longest_path(
-        &maze,
+        &graph,
         Pos(0, 1),
         Pos(maze.rows - 1, maze.columns - 2),
     ))
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<usize> {
+    let maze = load(input);
+    let graph = Graph::new(&maze, false);
+    //let graph = graph.collapse();
+    Some(longest_path(
+        &graph,
+        Pos(0, 1),
+        Pos(maze.rows - 1, maze.columns - 2),
+    ))
 }
 
 #[cfg(test)]
@@ -131,9 +210,19 @@ mod tests {
     #[test_case(Pos(3,3) => vec![Pos(3,4), Pos(4,3)]; "3,3: path east, slope south")]
     #[test_case(Pos(3,11) => vec![Pos(3,12), Pos(4,11)] ; "3,11: slopes east, south, west (impassable)")]
     #[test_case(Pos(5,3) => vec![Pos(5,4), Pos(6,3)] ; "5,3: slopes east, south, north (impassable)")]
-    fn test_neighbours(start: Pos) -> Vec<Pos> {
+    fn test_slippy_neighbours(start: Pos) -> Vec<Pos> {
         let maze = load(&advent_of_code::template::read_file("examples", DAY));
-        start.neighbours(&maze).collect()
+        start.neighbours(&maze, true).collect()
+    }
+
+    #[test_case(Pos(0,1) => vec![Pos(1,1)] ; "0,1: path south")]
+    #[test_case(Pos(1,1) => vec![Pos(0,1), Pos(1,2)] ; "1,1: paths east and north")]
+    #[test_case(Pos(3,3) => vec![Pos(3,4), Pos(4,3)]; "3,3: path east, slope south")]
+    #[test_case(Pos(3,11) => vec![Pos(3,10), Pos(3,12), Pos(4,11)] ; "3,11: slopes west, east, south")]
+    #[test_case(Pos(5,3) => vec![Pos(4,3), Pos(5,4), Pos(6,3)] ; "5,3: slopes north, east, south")]
+    fn test_dry_neighbours(start: Pos) -> Vec<Pos> {
+        let maze = load(&advent_of_code::template::read_file("examples", DAY));
+        start.neighbours(&maze, false).collect()
     }
 
     #[test]
@@ -145,6 +234,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(154));
     }
 }
