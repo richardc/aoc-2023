@@ -110,27 +110,22 @@ impl Graph {
             .collect_vec();
 
         for current in collapsable {
-            dbg!(&current, &graph);
             let edges = graph.remove(&current).unwrap();
             let mut edges = edges.iter();
             let (left, left_distance) = edges.next().unwrap();
             let (right, right_distance) = edges.next().unwrap();
-            let distance = left_distance + right_distance;
-
-            dbg!(&current, &left, &right);
 
             let left_edges = graph.get_mut(left).unwrap();
             if left_edges.contains_key(&current) {
                 let old = left_edges.remove(&current).unwrap();
-                left_edges.insert(*right, distance + old);
+                left_edges.insert(*right, old + right_distance);
             }
 
             let right_edges = graph.get_mut(right).unwrap();
             if right_edges.contains_key(&current) {
                 let old = right_edges.remove(&current).unwrap();
-                right_edges.insert(*left, distance + old);
+                right_edges.insert(*left, old + left_distance);
             }
-            dbg!(&graph);
         }
 
         Graph(graph)
@@ -192,7 +187,7 @@ pub fn part_one(input: &str) -> Option<usize> {
 pub fn part_two(input: &str) -> Option<usize> {
     let maze = load(input);
     let graph = Graph::new(&maze, false);
-    //let graph = graph.collapse();
+    let graph = graph.collapse();
     Some(longest_path(
         &graph,
         Pos(0, 1),
@@ -247,8 +242,8 @@ mod tests {
         check!(
             graph.collapse().0
                 == HashMap::from([
-                    (Pos(0, 1), HashMap::from([(Pos(3, 1), 4)])),
-                    (Pos(3, 1), HashMap::from([(Pos(0, 1), 4)])),
+                    (Pos(0, 1), HashMap::from([(Pos(3, 1), 3)])),
+                    (Pos(3, 1), HashMap::from([(Pos(0, 1), 3)])),
                 ]),
         );
     }
