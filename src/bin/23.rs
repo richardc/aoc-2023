@@ -50,24 +50,18 @@ impl Pos {
         use Direction::*;
         maze.neighbours((self.0, self.1), false)
             .filter(move |&next| match maze.get(next).unwrap() {
-                Path => true,
                 Forest => false,
-                Slope(d) => {
-                    if slippy {
-                        !matches!(
-                            (
-                                (
-                                    self.0 as isize - next.0 as isize,
-                                    self.1 as isize - next.1 as isize,
-                                ),
-                                d,
-                            ),
-                            ((-1, 0), North) | ((0, 1), East) | ((1, 0), South) | ((0, -1), West),
-                        )
-                    } else {
-                        true
-                    }
-                }
+                Slope(d) if slippy => !matches!(
+                    (
+                        (
+                            self.0 as isize - next.0 as isize,
+                            self.1 as isize - next.1 as isize,
+                        ),
+                        d,
+                    ),
+                    ((-1, 0), North) | ((0, 1), East) | ((1, 0), South) | ((0, -1), West),
+                ),
+                _ => true,
             })
             .map(|next| Pos(next.0, next.1))
     }
