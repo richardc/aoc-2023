@@ -1,7 +1,8 @@
 advent_of_code::solution!(23);
 
+use std::collections::HashSet;
+
 use pathfinding::matrix::Matrix;
-use pathfinding::prelude::edmonds_karp_dense;
 
 #[derive(Debug)]
 enum Direction {
@@ -67,32 +68,50 @@ fn load(input: &str) -> Matrix<Cell> {
     Matrix::from_iter(input.lines().map(|l| l.bytes().map(Cell::new)))
 }
 
-pub fn part_one(input: &str) -> Option<i32> {
+fn find_paths(maze: &Matrix<Cell>, start: Pos, goal: Pos) -> Vec<Vec<Pos>> {
+    fn walk(
+        maze: &Matrix<Cell>,
+        current: Pos,
+        goal: Pos,
+        visited: &mut HashSet<Pos>,
+        current_path: &mut Vec<Pos>,
+        all_paths: &mut Vec<Vec<Pos>>,
+    ) {
+        if !visited.insert(current) {
+            return;
+        }
+
+        current_path.push(current);
+
+        if current == goal {
+            all_paths.push(current_path.clone());
+            visited.remove(&current);
+            current_path.pop();
+            return;
+        }
+
+        for neighbour in current.neighbours(maze) {
+            walk(maze, neighbour, goal, visited, current_path, all_paths);
+        }
+
+        current_path.pop();
+        visited.remove(&current);
+    }
+
+    let mut visited: HashSet<Pos> = HashSet::new();
+    let mut current: Vec<Pos> = Vec::new();
+    let mut all: Vec<Vec<Pos>> = Vec::new();
+
+    walk(maze, start, goal, &mut visited, &mut current, &mut all);
+
+    all
+}
+
+pub fn part_one(input: &str) -> Option<usize> {
     let maze = load(input);
+    let paths = find_paths(&maze, Pos(0, 1), Pos(maze.rows - 1, maze.columns - 2));
 
-    let vertices: Vec<_> = maze
-        .items()
-        .filter_map(|((r, c), cell)| {
-            if matches!(cell, Cell::Path | Cell::Slope(_)) {
-                Some(Pos(r, c))
-            } else {
-                None
-            }
-        })
-        .collect();
-
-    let capacities = vertices
-        .iter()
-        .flat_map(|p| p.neighbours(&maze).map(|n| ((*p, n), 1)));
-
-    let (nodes, _, _) = edmonds_karp_dense(
-        &vertices,
-        &Pos(0, 1),
-        &Pos(maze.rows - 1, maze.columns - 2),
-        capacities,
-    );
-
-    Some(nodes.len() as i32)
+    paths.iter().map(|p| p.len() - 1).max()
 }
 
 pub fn part_two(_input: &str) -> Option<u32> {
