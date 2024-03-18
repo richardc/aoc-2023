@@ -54,19 +54,16 @@ impl Pos {
                 Forest => false,
                 Slope(d) => {
                     if slippy {
-                        match (
+                        !matches!(
                             (
-                                self.0 as isize - next.0 as isize,
-                                self.1 as isize - next.1 as isize,
+                                (
+                                    self.0 as isize - next.0 as isize,
+                                    self.1 as isize - next.1 as isize,
+                                ),
+                                d,
                             ),
-                            d,
-                        ) {
-                            ((-1, 0), North) => false,
-                            ((0, 1), East) => false,
-                            ((1, 0), South) => false,
-                            ((0, -1), West) => false,
-                            _ => true,
-                        }
+                            ((-1, 0), North) | ((0, 1), East) | ((1, 0), South) | ((0, -1), West),
+                        )
                     } else {
                         true
                     }
