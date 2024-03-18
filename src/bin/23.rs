@@ -1,5 +1,6 @@
 advent_of_code::solution!(23);
 
+use std::cmp::max;
 use std::collections::HashSet;
 
 use pathfinding::matrix::Matrix;
@@ -68,14 +69,14 @@ fn load(input: &str) -> Matrix<Cell> {
     Matrix::from_iter(input.lines().map(|l| l.bytes().map(Cell::new)))
 }
 
-fn find_paths(maze: &Matrix<Cell>, start: Pos, goal: Pos) -> Vec<Vec<Pos>> {
+fn longest_path(maze: &Matrix<Cell>, start: Pos, goal: Pos) -> usize {
     fn walk(
         maze: &Matrix<Cell>,
         current: Pos,
         goal: Pos,
         visited: &mut HashSet<Pos>,
         current_path: &mut Vec<Pos>,
-        all_paths: &mut Vec<Vec<Pos>>,
+        longest: &mut usize,
     ) {
         if !visited.insert(current) {
             return;
@@ -84,14 +85,14 @@ fn find_paths(maze: &Matrix<Cell>, start: Pos, goal: Pos) -> Vec<Vec<Pos>> {
         current_path.push(current);
 
         if current == goal {
-            all_paths.push(current_path.clone());
+            *longest = max(*longest, current_path.len() - 1);
             visited.remove(&current);
             current_path.pop();
             return;
         }
 
         for neighbour in current.neighbours(maze) {
-            walk(maze, neighbour, goal, visited, current_path, all_paths);
+            walk(maze, neighbour, goal, visited, current_path, longest);
         }
 
         current_path.pop();
@@ -100,18 +101,20 @@ fn find_paths(maze: &Matrix<Cell>, start: Pos, goal: Pos) -> Vec<Vec<Pos>> {
 
     let mut visited: HashSet<Pos> = HashSet::new();
     let mut current: Vec<Pos> = Vec::new();
-    let mut all: Vec<Vec<Pos>> = Vec::new();
+    let mut longest = 0;
 
-    walk(maze, start, goal, &mut visited, &mut current, &mut all);
+    walk(maze, start, goal, &mut visited, &mut current, &mut longest);
 
-    all
+    longest
 }
 
 pub fn part_one(input: &str) -> Option<usize> {
     let maze = load(input);
-    let paths = find_paths(&maze, Pos(0, 1), Pos(maze.rows - 1, maze.columns - 2));
-
-    paths.iter().map(|p| p.len() - 1).max()
+    Some(longest_path(
+        &maze,
+        Pos(0, 1),
+        Pos(maze.rows - 1, maze.columns - 2),
+    ))
 }
 
 pub fn part_two(_input: &str) -> Option<u32> {
