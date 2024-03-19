@@ -87,9 +87,79 @@ pub fn part_one(input: &str) -> Option<usize> {
     ))
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    let _ = input;
-    None
+#[derive(Debug, PartialEq, Clone)]
+struct Stone {
+    x: i64,
+    y: i64,
+    z: i64,
+    vx: i64,
+    vy: i64,
+    vz: i64,
+}
+
+impl Stone {
+    fn new(s: &str) -> Self {
+        let (point, vector) = s.split_once('@').unwrap();
+        let (x, y, z) = point
+            .split(',')
+            .map(|c| c.trim().parse().unwrap())
+            .collect_tuple()
+            .unwrap();
+        let (vx, vy, vz) = vector
+            .split(',')
+            .map(|c| c.trim().parse().unwrap())
+            .collect_tuple()
+            .unwrap();
+
+        Self {
+            x,
+            y,
+            z,
+            vx,
+            vy,
+            vz,
+        }
+    }
+}
+
+use z3::ast::{Ast, Int};
+use z3::{Config, Context, Solver};
+
+pub fn part_two(input: &str) -> Option<i64> {
+    let config = Config::new();
+    let context = Context::new(&config);
+    let solver = Solver::new(&context);
+
+    // The rock
+    let x = Int::new_const(&context, "x");
+    let y = Int::new_const(&context, "y");
+    let z = Int::new_const(&context, "z");
+    let vx = Int::new_const(&context, "vx");
+    let vy = Int::new_const(&context, "vy");
+    let vz = Int::new_const(&context, "vz");
+
+    for stone in input.lines().map(Stone::new) {
+        let sx = Int::from_i64(&context, stone.x);
+        let sy = Int::from_i64(&context, stone.y);
+        let sz = Int::from_i64(&context, stone.z);
+        let svx = Int::from_i64(&context, stone.vx);
+        let svy = Int::from_i64(&context, stone.vy);
+        let svz = Int::from_i64(&context, stone.vz);
+        let t = Int::fresh_const(&context, "t");
+
+        solver.assert(&(&sx + &svx * &t)._eq(&(&x + &vx * &t)));
+        solver.assert(&(&sy + &svy * &t)._eq(&(&y + &vy * &t)));
+        solver.assert(&(&sz + &svz * &t)._eq(&(&z + &vz * &t)));
+    }
+
+    solver.check();
+
+    let model = solver.get_model().unwrap();
+    let found_x = model.get_const_interp(&x).unwrap().as_i64().unwrap();
+    let found_y = model.get_const_interp(&y).unwrap().as_i64().unwrap();
+    let found_z = model.get_const_interp(&z).unwrap().as_i64().unwrap();
+
+    Some(found_x + found_y + found_z)
 }
 
 #[cfg(test)]
@@ -138,6 +208,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(47));
     }
 }
