@@ -46,26 +46,32 @@ fn load(s: &str) -> Graph {
     g
 }
 
+fn largest_node(graph: &Graph, connected: &HashSet<Node>) -> Node {
+    let node = connected
+        .iter()
+        .max_by_key(|n| graph.get(n).unwrap().difference(&connected).count())
+        .unwrap();
+    *node
+}
+
+fn count_links(graph: &Graph, connected: &HashSet<Node>) -> usize {
+    connected
+        .iter()
+        .map(|n| graph.get(n).unwrap().difference(&connected).count())
+        .sum()
+}
+
 pub fn part_one(input: &str) -> Option<usize> {
     let graph = load(input);
+    let nodes: HashSet<Node> = HashSet::from_iter(graph.keys().copied());
+    let mut connected = nodes.clone();
 
-    dbg!(&graph);
-    let mut left: HashSet<Node> = HashSet::from_iter(graph.keys().copied());
-    let count = |node| graph.get(node).unwrap().difference(&left).count();
-    while left.iter().map(count).sum::<usize>() != 3 {
-        let max = left
-            .iter()
-            .max_by_key(|n| count(n))
-            .expect("should have a max to remove");
-        left.remove(&max);
+    while count_links(&graph, &connected) != 3 {
+        let largest = largest_node(&graph, &connected);
+        connected.remove(&largest);
     }
 
-    Some(
-        left.len()
-            * HashSet::from_iter(graph.keys().copied())
-                .difference(&left)
-                .count(),
-    )
+    Some(connected.len() * nodes.difference(&connected).count())
 }
 
 pub fn part_two(_input: &str) -> Option<u32> {
@@ -79,6 +85,6 @@ mod tests {
     #[test]
     fn test_part_one() {
         let result = part_one(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, Some(56));
+        assert_eq!(result, Some(54));
     }
 }
