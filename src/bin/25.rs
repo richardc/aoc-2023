@@ -74,8 +74,8 @@ pub fn part_one(input: &str) -> Option<usize> {
     Some(connected.len() * nodes.difference(&connected).count())
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+pub fn part_two(_input: &str) -> Option<String> {
+    Some("White Christmas".to_string())
 }
 
 #[cfg(test)]
