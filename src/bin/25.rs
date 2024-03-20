@@ -49,7 +49,7 @@ fn load(s: &str) -> Graph {
 fn largest_node(graph: &Graph, connected: &HashSet<Node>) -> Node {
     let node = connected
         .iter()
-        .max_by_key(|n| graph.get(n).unwrap().difference(&connected).count())
+        .max_by_key(|n| graph.get(n).unwrap().difference(connected).count())
         .unwrap();
     *node
 }
@@ -57,7 +57,7 @@ fn largest_node(graph: &Graph, connected: &HashSet<Node>) -> Node {
 fn count_links(graph: &Graph, connected: &HashSet<Node>) -> usize {
     connected
         .iter()
-        .map(|n| graph.get(n).unwrap().difference(&connected).count())
+        .map(|n| graph.get(n).unwrap().difference(connected).count())
         .sum()
 }
 
